@@ -1,19 +1,19 @@
 # Build stage
-FROM node:22-bookworm-slim AS build
+FROM node:24-bookworm-slim AS build
 
 WORKDIR /app
 
 COPY package.json package-lock.json ./
 
-RUN npm ci --include=dev --no-audit --no-fund --fetch-retries=5 --fetch-retry-factor=2 --fetch-timeout=600000
+RUN npm install -g npm@12.2.0 --no-audit --no-fund
+RUN npm ci --include=dev --no-audit --no-fund
 
 COPY . .
 
-RUN npm run build \
-    && npm prune --omit=dev
+RUN npm run build && npm prune --omit=dev
 
-# Production runtime stage
-FROM node:22-bookworm-slim AS runtime
+# Runtime stage
+FROM node:24-bookworm-slim AS runtime
 
 WORKDIR /app
 
