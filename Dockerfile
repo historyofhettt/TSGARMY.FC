@@ -10,6 +10,9 @@ RUN npm ci --include=dev --no-audit --no-fund
 
 COPY . .
 
+ARG 1556618631893225603
+ARG 116180026783-kgaaoveg9h9vk5iljmc54v7pp076us4r.apps.googleusercontent.com
+
 RUN npm run build && npm prune --omit=dev
 
 # Runtime stage
