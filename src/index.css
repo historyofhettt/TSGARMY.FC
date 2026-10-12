@@ -1,0 +1,137 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* TSG design tokens — dark first */
+    --background: 224 45% 4%;
+    --foreground: 210 30% 96%;
+    --card: 224 40% 7%;
+    --card-foreground: 210 30% 96%;
+    --popover: 224 45% 6%;
+    --popover-foreground: 210 30% 96%;
+    --primary: 210 100% 56%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 223 30% 12%;
+    --secondary-foreground: 210 30% 96%;
+    --muted: 223 25% 14%;
+    --muted-foreground: 217 15% 62%;
+    --accent: 223 30% 14%;
+    --accent-foreground: 210 30% 96%;
+    --destructive: 355 85% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 222 22% 15%;
+    --input: 222 22% 18%;
+    --ring: 210 100% 56%;
+    --radius: 0.625rem;
+
+    /* TSG brand tokens */
+    --tsg-blue: 210 100% 56%;
+    --tsg-red: 355 85% 55%;
+    --tsg-navy: 224 50% 8%;
+    --sidebar-background: 224 45% 5%;
+    --sidebar-foreground: 210 30% 96%;
+    --sidebar-primary: 210 100% 56%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 223 30% 12%;
+    --sidebar-accent-foreground: 210 30% 96%;
+    --sidebar-border: 222 22% 14%;
+    --sidebar-ring: 210 100% 56%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Rajdhani", "Inter", system-ui, sans-serif;
+  }
+  h1, h2, h3, h4, .font-display {
+    font-family: "Orbitron", "Rajdhani", system-ui, sans-serif;
+  }
+  ::selection {
+    background: hsl(var(--tsg-blue) / 0.35);
+  }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: hsl(var(--background)); }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(222 22% 20%);
+    border-radius: 8px;
+    border: 2px solid hsl(var(--background));
+  }
+  ::-webkit-scrollbar-thumb:hover { background: hsl(var(--tsg-blue) / 0.5); }
+}
+
+@layer utilities {
+  .font-display { font-family: "Orbitron", "Rajdhani", system-ui, sans-serif; }
+
+  .glass {
+    background: linear-gradient(145deg, hsl(224 40% 10% / 0.72), hsl(224 45% 6% / 0.55));
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid hsl(217 30% 30% / 0.35);
+  }
+
+  .glass-strong {
+    background: linear-gradient(145deg, hsl(224 42% 12% / 0.9), hsl(224 45% 7% / 0.85));
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid hsl(217 30% 35% / 0.4);
+  }
+
+  .glow-blue { box-shadow: 0 0 24px hsl(var(--tsg-blue) / 0.28), 0 0 64px hsl(var(--tsg-blue) / 0.12); }
+  .glow-red { box-shadow: 0 0 24px hsl(var(--tsg-red) / 0.28), 0 0 64px hsl(var(--tsg-red) / 0.12); }
+  .text-glow-blue { text-shadow: 0 0 18px hsl(var(--tsg-blue) / 0.55); }
+  .text-glow-red { text-shadow: 0 0 18px hsl(var(--tsg-red) / 0.55); }
+
+  .holo-border {
+    position: relative;
+    border: 1px solid transparent;
+    background:
+      linear-gradient(hsl(224 40% 8%), hsl(224 40% 8%)) padding-box,
+      linear-gradient(135deg, hsl(var(--tsg-blue) / 0.7), hsl(224 30% 20% / 0.4) 40%, hsl(var(--tsg-red) / 0.7)) border-box;
+  }
+
+  .bg-grid {
+    background-image:
+      linear-gradient(hsl(217 40% 40% / 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(217 40% 40% / 0.06) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+
+  .bg-radial-fade {
+    background: radial-gradient(ellipse 80% 60% at 50% 0%, hsl(var(--tsg-blue) / 0.14), transparent 65%);
+  }
+
+  .clip-slant { clip-path: polygon(0 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%); }
+
+  .animate-float { animation: tsg-float 7s ease-in-out infinite; }
+  .animate-float-slow { animation: tsg-float 11s ease-in-out infinite; }
+  .animate-live-pulse { animation: tsg-live 1.6s ease-in-out infinite; }
+  .animate-sweep { animation: tsg-sweep 2.8s linear infinite; }
+}
+
+@keyframes tsg-float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-14px); }
+}
+
+@keyframes tsg-live {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 hsl(var(--tsg-red) / 0.55); }
+  50% { opacity: 0.75; box-shadow: 0 0 0 7px hsl(var(--tsg-red) / 0); }
+}
+
+@keyframes tsg-sweep {
+  0% { transform: translateX(-120%) skewX(-18deg); }
+  100% { transform: translateX(240%) skewX(-18deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float, .animate-float-slow, .animate-live-pulse, .animate-sweep {
+    animation: none !important;
+  }
+  * { scroll-behavior: auto !important; }
+}

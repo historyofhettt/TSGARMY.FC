@@ -1,0 +1,16 @@
+CREATE TABLE team_media (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  teamId BIGINT UNSIGNED NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  description TEXT NULL,
+  date TIMESTAMP NULL,
+  photos TEXT NULL,
+  link VARCHAR(1024) NULL,
+  isActive ENUM('active', 'hidden') NOT NULL DEFAULT 'active',
+  displayOrder INT NOT NULL DEFAULT 0,
+  createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX team_media_team_idx (teamId),
+  INDEX team_media_status_idx (isActive),
+  CONSTRAINT fk_team_media_team FOREIGN KEY (teamId) REFERENCES teams(id) ON DELETE CASCADE
+);

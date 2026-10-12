@@ -1,0 +1,83 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1791166776989,
+      "tag": "0000_polite_robbie_robertson",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "5",
+      "when": 1791166777000,
+      "tag": "0028_fan_spotlight",
+      "breakpoints": false
+    },
+    {
+      "idx": 28,
+      "version": "5",
+      "when": 1791866000000,
+      "tag": "0029_comments_live_links_notifications",
+      "breakpoints": false
+    },
+    {
+      "idx": 29,
+      "version": "5",
+      "when": 1791867000000,
+      "tag": "0030_live_links_team_channels",
+      "breakpoints": false
+    },
+    {
+      "idx": 30,
+      "version": "5",
+      "when": 1791867100000,
+      "tag": "0031_live_section_roles",
+      "breakpoints": false
+    },
+    {
+      "idx": 31,
+      "version": "5",
+      "when": 1791867200000,
+      "tag": "0032_live_links_display_platform",
+      "breakpoints": false
+    },
+    {
+      "idx": 32,
+      "version": "5",
+      "when": 1791867300000,
+       "tag": "0033_sponsored_ads_and_comments_v2",
+      "breakpoints": false
+    },
+    {
+      "idx": 33,
+      "version": "5",
+      "when": 1791870000000,
+       "tag": "0034_ad_display_controls",
+      "breakpoints": false
+    },
+    {
+      "idx": 34,
+      "version": "5",
+      "when": 1791872000000,
+      "tag": "0035_developer_info",
+      "breakpoints": false
+    },
+     {
+       "idx": 35,
+       "version": "5",
+       "when": 1791874000000,
+       "tag": "0036_fan_rewards",
+       "breakpoints": false
+     },
+     {
+       "idx": 36,
+       "version": "5",
+       "when": 1791876000000,
+       "tag": "0037_security_indexes",
+       "breakpoints": false
+     }
+   ]
+ }

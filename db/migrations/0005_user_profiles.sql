@@ -1,0 +1,1 @@
+ALTER TABLE users ADD COLUMN bio TEXT NULL AFTER avatar;
