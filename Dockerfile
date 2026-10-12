@@ -10,8 +10,16 @@ RUN npm ci --include=dev --no-audit --no-fund
 
 COPY . .
 
-ARG 1556618631893225603
-ARG 116180026783-kgaaoveg9h9vk5iljmc54v7pp076us4r.apps.googleusercontent.com
+ARG VITE_DISCORD_CLIENT_ID
+ARG VITE_GOOGLE_CLIENT_ID
+
+RUN if [ -z "$VITE_DISCORD_CLIENT_ID" ]; then \
+      echo "ERROR: VITE_DISCORD_CLIENT_ID missing during build"; exit 1; \
+    elif [ -z "$VITE_GOOGLE_CLIENT_ID" ]; then \
+      echo "ERROR: VITE_GOOGLE_CLIENT_ID missing during build"; exit 1; \
+    else \
+      echo "OAuth Client IDs received during build"; \
+    fi
 
 RUN npm run build && npm prune --omit=dev
 
