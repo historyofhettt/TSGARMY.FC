@@ -5,7 +5,7 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 
-RUN npm ci --include=dev --no-audit --no-fund
+RUN npm ci --include=dev --no-audit --no-fund --loglevel verbose || (cat /root/.npm/_logs/*debug-0.log; exit 1)
 
 COPY . .
 
