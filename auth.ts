@@ -7,22 +7,22 @@ import { signSessionToken } from "../session";
 import { upsertUser, findUserByProvider } from "../queries/users";
 
 async function exchangeCodeForTokens(code: string, redirectUri: string) {
-  if (!env.discordClientId) {
-    throw new Error("Discord OAuth is not configured. Missing DISCORD_CLIENT_ID.");
+  if (!env.googleClientId) {
+    throw new Error("Google OAuth is not configured. Missing GOOGLE_CLIENT_ID.");
   }
-  if (!env.discordClientSecret) {
-    throw new Error("Discord OAuth is not configured. Missing DISCORD_CLIENT_SECRET.");
+  if (!env.googleClientSecret) {
+    throw new Error("Google OAuth is not configured. Missing GOOGLE_CLIENT_SECRET.");
   }
 
   const params = new URLSearchParams({
     code,
-    client_id: env.discordClientId,
-    client_secret: env.discordClientSecret,
+    client_id: env.googleClientId,
+    client_secret: env.googleClientSecret,
     redirect_uri: redirectUri,
     grant_type: "authorization_code",
   });
 
-  const resp = await fetch("https://discord.com/api/oauth2/token", {
+  const resp = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: params.toString(),
@@ -48,16 +48,36 @@ async function exchangeCodeForTokens(code: string, redirectUri: string) {
       }
     }
     if (retryAfterSecs) {
-      console.warn(`[Discord OAuth] Rate-limited (429). Retry after ${retryAfterSecs}s.`, { retryAfterSecs, body: bodyText });
+      console.warn(`[Google OAuth] Rate-limited (429). Retry after ${retryAfterSecs}s.`, { retryAfterSecs });
     } else {
-      console.warn("[Discord OAuth] Rate-limited (429). No retry duration provided by Discord.");
+      console.warn("[Google OAuth] Rate-limited (429). No retry duration provided by Google.");
     }
-    throw new Error("Discord rate limit reached. Please try signing in again in a moment.");
+    console.warn("[Google OAuth] Token exchange rate-limited. Provider URL: oauth2.googleapis.com/token");
+    throw new Error("Google rate limit reached. Please try signing in again in a moment.");
   }
 
   if (!resp.ok) {
     const text = await resp.text();
-    throw new Error(`Discord token exchange failed (${resp.status}): ${text}`);
+    let safeDetail = "";
+    try {
+      const bodyJson = JSON.parse(text);
+      safeDetail = JSON.stringify(bodyJson);
+    } catch {
+      safeDetail = `[non-JSON response, ${text.length} chars]`;
+    }
+    console.error(`[Google OAuth] Token exchange failed. Status: ${resp.status}`, {
+      provider: "google",
+      endpoint: "oauth2.googleapis.com/token",
+      status: resp.status,
+      detail: safeDetail,
+    });
+    if (resp.status === 400 && /invalid_grant/i.test(text)) {
+      throw new Error("Google OAuth authorization code expired or already used. Please restart sign-in.");
+    }
+    if (resp.status === 401) {
+      throw new Error("Google OAuth credentials invalid. Contact support.");
+    }
+    throw new Error(`Google token exchange failed (${resp.status}).`);
   }
 
   return resp.json() as Promise<{
@@ -69,31 +89,44 @@ async function exchangeCodeForTokens(code: string, redirectUri: string) {
   }>;
 }
 
-async function fetchDiscordProfile(accessToken: string) {
-  const resp = await fetch("https://discord.com/api/users/@me", {
+async function fetchGoogleProfile(accessToken: string) {
+  const resp = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 
   if (!resp.ok) {
     const text = await resp.text();
-    throw new Error(`Discord profile fetch failed (${resp.status}): ${text}`);
+    let safeDetail = "";
+    try {
+      const bodyJson = JSON.parse(text);
+      safeDetail = JSON.stringify(bodyJson);
+    } catch {
+      safeDetail = `[non-JSON response, ${text.length} chars]`;
+    }
+    console.error(`[Google OAuth] Profile fetch failed. Status: ${resp.status}`, {
+      provider: "google",
+      endpoint: "www.googleapis.com/oauth2/v3/userinfo",
+      status: resp.status,
+      detail: safeDetail,
+    });
+    throw new Error(`Google profile fetch failed (${resp.status}).`);
   }
 
   return resp.json() as Promise<{
-    id: string;
-    username: string;
-    discriminator: string;
-    avatar: string;
-    global_name?: string;
+    sub: string;
+    name: string;
+    email: string;
+    picture: string;
   }>;
 }
 
-export function createDiscordCallbackHandler() {
+export function createGoogleCallbackHandler() {
   return async (c: Context) => {
     const code = c.req.query("code");
     const error = c.req.query("error");
 
     if (error) {
+      console.warn("[Google OAuth] Redirected with error parameter:", { error: error.substring(0, 100) });
       return c.redirect("/", 302);
     }
 
@@ -103,8 +136,8 @@ export function createDiscordCallbackHandler() {
 
     try {
       const state = c.req.query("state");
-      const expectedBase = c.req.url.split("/api/oauth/discord")[0];
-      const redirectUri = `${expectedBase}/api/oauth/discord/callback`;
+      const expectedBase = c.req.url.split("/api/oauth/google")[0];
+      const redirectUri = `${expectedBase}/api/oauth/google/callback`;
       let redirectUriUsed = redirectUri;
       if (state) {
         try {
@@ -117,59 +150,57 @@ export function createDiscordCallbackHandler() {
           // keep fallback redirectUri
         }
       }
-       const tokenResp = await exchangeCodeForTokens(code, redirectUriUsed);
-      const profile = await fetchDiscordProfile(tokenResp.access_token);
+      const tokenResp = await exchangeCodeForTokens(code, redirectUriUsed);
+      const profile = await fetchGoogleProfile(tokenResp.access_token);
       if (!profile) {
-        throw new Error("Failed to fetch Discord profile");
+        throw new Error("Failed to fetch Google profile");
       }
 
-       const name = profile.global_name || profile.username;
-      const avatar = profile.avatar
-        ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png`
-        : null;
-
       const username = c.req.query("username");
-      const existingByProvider = await findUserByProvider("discord", profile.id);
+      const existingByProvider = await findUserByProvider("google", profile.sub);
 
-      // If no username provided and user doesn't exist yet → redirect to username selection
       if (!username && !existingByProvider) {
         const params = new URLSearchParams();
-        params.set("provider", "discord");
-        params.set("providerId", profile.id);
-        params.set("name", name ?? "");
-        params.set("avatar", avatar ?? "");
+        params.set("provider", "google");
+        params.set("providerId", profile.sub);
+        params.set("email", profile.email ?? "");
+        params.set("name", profile.name ?? "");
+        params.set("avatar", profile.picture ?? "");
         return c.redirect(`/username-select?${params.toString()}`, 302);
       }
 
       try {
         await upsertUser({
-          provider: "discord",
-          providerId: profile.id,
-          name,
-          avatar,
+          provider: "google",
+          providerId: profile.sub,
+          name: profile.name,
+          email: profile.email,
+          avatar: profile.picture,
           ...(username ? { username } : {}),
         });
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         if (/Username already exists/i.test(msg)) {
           const params = new URLSearchParams();
-          params.set("provider", "discord");
-          params.set("providerId", profile.id);
-          params.set("name", name ?? "");
-          params.set("avatar", avatar ?? "");
+          params.set("provider", "google");
+          params.set("providerId", profile.sub);
+          params.set("email", profile.email ?? "");
+          params.set("name", profile.name ?? "");
+          params.set("avatar", profile.picture ?? "");
           params.set("error", "Username already exists");
           return c.redirect(`/username-select?${params.toString()}`, 302);
         }
+        console.error("[Google OAuth] Database upsert failed:", { providerId: profile.sub, error: msg.substring(0, 200) });
         throw err;
       }
 
-      const user = await findUserByProvider("discord", profile.id);
+      const user = await findUserByProvider("google", profile.sub);
       if (!user) {
-        throw new Error("Failed to create or load Discord user");
+        throw new Error("Failed to create or load Google user");
       }
 
       const session = await signSessionToken({
-        kind: "discord",
+        kind: "google",
         userId: user.id,
       });
 
@@ -184,12 +215,21 @@ export function createDiscordCallbackHandler() {
       const response = new Response(null, { status: 302, headers });
       return response;
     } catch (error) {
-      console.error("[Discord OAuth] Callback failed", error);
+      console.error("[Google OAuth] Callback failed", error);
       const msg = error instanceof Error ? error.message : String(error);
-      if (msg.includes("Discord rate limit")) {
-        return c.json({ error: "Discord rate limit reached. Please try signing in again in a few moments." }, 429);
+      if (msg.includes("rate limit")) {
+        return c.json({ error: "Google rate limit reached. Please try signing in again in a few moments." }, 429);
       }
-      return c.json({ error: "Discord OAuth callback failed" }, 500);
+      if (msg.includes("not configured")) {
+        return c.json({ error: "Google OAuth is not configured on the server." }, 503);
+      }
+      if (msg.includes("authorization code")) {
+        return c.json({ error: "Google OAuth session expired. Please sign in again." }, 400);
+      }
+      if (msg.includes("credentials invalid")) {
+        return c.json({ error: "Google OAuth credentials are invalid. Please contact support." }, 502);
+      }
+      return c.json({ error: "Google OAuth callback failed" }, 500);
     }
   };
 }
