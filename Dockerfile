@@ -5,7 +5,7 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 
-RUN npm ci --include=dev --no-audit --no-fund --loglevel verbose || (cat /root/.npm/_logs/*debug-0.log; exit 1)
+RUN npm ci --include=dev --no-audit --no-fund --fetch-retries=5 --fetch-retry-factor=2 --fetch-timeout=600000
 
 COPY . .
 
