@@ -5,8 +5,7 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 
-RUN npm install -g npm@12.2.0 \
-    && npm ci --include=dev --no-audit --no-fund
+RUN npm ci --include=dev --no-audit --no-fund
 
 COPY . .
 
