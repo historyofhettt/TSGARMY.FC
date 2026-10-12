@@ -1,8 +1,8 @@
 # Build stage: install all deps, build client + server bundles
-FROM node:20-slim AS build
+FROM node:22-bookworm-slim AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci --no-audit --no-fund
+RUN npm ci --include=dev --no-audit --no-fund
 COPY . .
 RUN npm run build && npm prune --omit=dev
 
