@@ -59,22 +59,64 @@ describe("OAuth redirect_uri consistency: frontend and backend use identical URL
     expect(frontendValue).toBe(backendValue);
   });
 
-  it("throws in production when GOOGLE_REDIRECT_URI is missing", async () => {
+  it("does NOT throw when GOOGLE_REDIRECT_URI is missing (optional, validates at request time)", async () => {
     delete process.env.GOOGLE_REDIRECT_URI;
     vi.resetModules();
 
-    await expect(import("./lib/env")).rejects.toThrow(
-      /Missing required environment variable: GOOGLE_REDIRECT_URI/,
-    );
+    const { env } = await import("./lib/env");
+    expect(env.googleRedirectUri).toBe("");
   });
 
-  it("throws in production when DISCORD_REDIRECT_URI is missing", async () => {
+  it("does NOT throw when DISCORD_REDIRECT_URI is missing (optional, validates at request time)", async () => {
     delete process.env.DISCORD_REDIRECT_URI;
     vi.resetModules();
 
-    await expect(import("./lib/env")).rejects.toThrow(
-      /Missing required environment variable: DISCORD_REDIRECT_URI/,
-    );
+    const { env } = await import("./lib/env");
+    expect(env.discordRedirectUri).toBe("");
+  });
+
+   it("Google callback handler returns 503 when GOOGLE_REDIRECT_URI is missing", async () => {
+    delete process.env.GOOGLE_REDIRECT_URI;
+    vi.resetModules();
+
+    const { createGoogleCallbackHandler } = await import("./google/auth");
+
+    const mockC = {
+      req: {
+        query: (k: string) => {
+          if (k === "code") return "test-auth-code";
+          if (k === "error") return null;
+          return null;
+        },
+      },
+      json: (data: unknown, status?: number) => ({ data, status }),
+      redirect: () => ({}),
+    } as unknown as Context;
+
+    const result = await createGoogleCallbackHandler()(mockC);
+    expect(result.status).toBe(503);
+  });
+
+  it("Discord callback handler returns 503 when DISCORD_REDIRECT_URI is missing", async () => {
+    delete process.env.DISCORD_REDIRECT_URI;
+    vi.resetModules();
+
+    const { createDiscordCallbackHandler } = await import("./discord/auth");
+
+    const mockC = {
+      req: {
+        query: (k: string) => {
+          if (k === "code") return "test-auth-code";
+          if (k === "error") return null;
+          return null;
+        },
+      },
+      json: (data: unknown, status?: number) => ({ data, status }),
+      redirect: () => ({}),
+    } as unknown as Context;
+
+    const result = await createDiscordCallbackHandler()(mockC);
+    expect(result.status).toBe(503);
   });
 
   it("redirect URIs are not localhost or proxy-internal URLs", async () => {
