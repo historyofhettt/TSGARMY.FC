@@ -1,7 +1,15 @@
 import fs from "fs";
 import path from "path";
+import { env } from "./env";
 
-const UPLOAD_ROOT = path.resolve(process.cwd(), "public/uploads");
+function resolveUploadRoot(): string {
+  if (env.isProduction) {
+    return path.resolve(process.cwd(), "dist", "public", "uploads");
+  }
+  return path.resolve(process.cwd(), "public", "uploads");
+}
+
+export const UPLOAD_ROOT = resolveUploadRoot();
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
 
@@ -24,6 +32,10 @@ function ensureDir(dir: string) {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
+}
+
+if (!fs.existsSync(UPLOAD_ROOT)) {
+  fs.mkdirSync(UPLOAD_ROOT, { recursive: true });
 }
 
 export function guessContentType(fileName: string): string {

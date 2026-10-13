@@ -18,6 +18,10 @@ dist/
 dist-ssr/
 build/
 
+# Uploaded files (runtime storage, not version-controlled)
+
+public/uploads/tsg/media/*-p*.png
+
 # Local files
 
 *.local

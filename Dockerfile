@@ -40,5 +40,6 @@ ENV NODE_ENV=production
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json
+RUN mkdir -p /app/dist/public/uploads
 EXPOSE 3000
 CMD ["node", "dist/boot.js"]

@@ -1181,9 +1181,6 @@ export const adminRouter = createRouter({
       const db = getDb();
       await db
         .update(players)
-        .set({ status: "former", teamId: null })
-      await db
-        .update(players)
         .set({ status: "former", teamId: null, userId: null })
         .where(eq(players.id, input.id));
       return { ok: true };

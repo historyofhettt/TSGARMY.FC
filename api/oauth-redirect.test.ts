@@ -267,7 +267,7 @@ describe("OAuth redirect_uri consistency: frontend and backend use identical URL
       } as Response),
     );
 
-    const result = await handler(mockC);
+    const result = await handler(mockC) as unknown as { status: number; data: { error: string } };
     expect(result.status).toBe(429);
     expect(result.data).toHaveProperty("error");
 
