@@ -11,7 +11,13 @@ type View = "login" | "register" | "register-username" | "forgot" | "otp" | "res
 
 function getGoogleOAuthUrl(username?: string) {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-  const redirectUri = `${window.location.origin}/api/oauth/google/callback`;
+  if (!clientId) {
+    throw new Error("Google OAuth is not configured. Missing VITE_GOOGLE_CLIENT_ID.");
+  }
+  const redirectUri = import.meta.env.VITE_GOOGLE_REDIRECT_URI;
+  if (!redirectUri) {
+    throw new Error("Google OAuth is not configured. Missing VITE_GOOGLE_REDIRECT_URI.");
+  }
   const state = btoa(redirectUri);
   const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
   url.searchParams.set("client_id", clientId);
@@ -26,7 +32,13 @@ function getGoogleOAuthUrl(username?: string) {
 
 function getDiscordOAuthUrl(username?: string) {
   const clientId = import.meta.env.VITE_DISCORD_CLIENT_ID;
-  const redirectUri = `${window.location.origin}/api/oauth/discord/callback`;
+  if (!clientId) {
+    throw new Error("Discord OAuth is not configured. Missing VITE_DISCORD_CLIENT_ID.");
+  }
+  const redirectUri = import.meta.env.VITE_DISCORD_REDIRECT_URI;
+  if (!redirectUri) {
+    throw new Error("Discord OAuth is not configured. Missing VITE_DISCORD_REDIRECT_URI.");
+  }
   const state = btoa(redirectUri);
   const url = new URL("https://discord.com/api/oauth2/authorize");
   url.searchParams.set("client_id", clientId);
@@ -89,24 +101,30 @@ export default function Login() {
   );
 
   const handleOAuth = (provider: "google" | "discord") => {
-    if (view === "register-username") {
-      if (!oauthUsername.trim()) {
-        toast.error("Please enter a username");
-        return;
+    let url: string;
+    try {
+      if (view === "register-username") {
+        if (!oauthUsername.trim()) {
+          toast.error("Please enter a username");
+          return;
+        }
+        if (!checkUsernameQuery.isFetching && checkUsernameQuery.data && !checkUsernameQuery.data.available) {
+          toast.error("Username already exists");
+          return;
+        }
+        if (checkUsernameQuery.isFetching) {
+          return;
+        }
+        url = provider === "google" ? getGoogleOAuthUrl(oauthUsername) : getDiscordOAuthUrl(oauthUsername);
+      } else {
+        url = provider === "google" ? getGoogleOAuthUrl() : getDiscordOAuthUrl();
       }
-      if (!checkUsernameQuery.isFetching && checkUsernameQuery.data && !checkUsernameQuery.data.available) {
-        toast.error("Username already exists");
-        return;
-      }
-      if (checkUsernameQuery.isFetching) {
-        return;
-      }
-      const url = provider === "google" ? getGoogleOAuthUrl(oauthUsername) : getDiscordOAuthUrl(oauthUsername);
-      window.location.href = url;
-    } else {
-      const url = provider === "google" ? getGoogleOAuthUrl() : getDiscordOAuthUrl();
-      window.location.href = url;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "OAuth is not configured for this provider";
+      toast.error(msg);
+      return;
     }
+    window.location.href = url;
   };
 
   return (
