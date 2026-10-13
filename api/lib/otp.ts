@@ -1,11 +1,13 @@
 import { randomInt } from "crypto";
-import bcrypt from "bcrypt";
+import { createRequire } from "module";
+
+const require = createRequire(import.meta.url);
+const bcrypt = require("bcrypt");
 
 const OTP_LENGTH = 6;
 const OTP_SALT_ROUNDS = 12;
 
 export function generateOtp(): string {
-  // Cryptographically secure 6-digit OTP (000000 - 999999)
   const n = randomInt(0, 1_000_000);
   return n.toString().padStart(OTP_LENGTH, "0");
 }
