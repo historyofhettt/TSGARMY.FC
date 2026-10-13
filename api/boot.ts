@@ -127,9 +127,8 @@ if (env.isProduction) {
   serveStaticFiles(app);
 
   const port = parseInt(process.env.PORT || "3000");
-  const hostname = process.env.HOSTNAME || "0.0.0.0";
-  serve({ fetch: app.fetch, port, hostname }, () => {
-    console.log(`Server running on http://${hostname}:${port}/`);
+  serve({ fetch: app.fetch, port, hostname: "0.0.0.0" }, () => {
+    console.log(`Server running on http://0.0.0.0:${port}/`);
   });
   startNotificationScheduler();
 } else {
