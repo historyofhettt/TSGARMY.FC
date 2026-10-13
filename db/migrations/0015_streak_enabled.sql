@@ -1,0 +1,2 @@
+ALTER TABLE `org_settings`
+  ADD COLUMN `streakEnabled` BOOLEAN NOT NULL DEFAULT TRUE;

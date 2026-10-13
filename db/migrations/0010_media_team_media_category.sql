@@ -1,0 +1,1 @@
+ALTER TABLE media MODIFY COLUMN category ENUM('team-logos','player-photos','owner-photos','tournament-logos','point-tables','achievement-images','user-avatars','team-media','other') NOT NULL DEFAULT 'other';
