@@ -19,10 +19,10 @@ export const env = {
   databaseUrl: required("DATABASE_URL"),
   googleClientId: optional("GOOGLE_CLIENT_ID"),
   googleClientSecret: optional("GOOGLE_CLIENT_SECRET"),
-  googleRedirectUri: optional("GOOGLE_REDIRECT_URI"),
+  googleRedirectUri: required("GOOGLE_REDIRECT_URI"),
   discordClientId: optional("DISCORD_CLIENT_ID"),
   discordClientSecret: optional("DISCORD_CLIENT_SECRET"),
-  discordRedirectUri: optional("DISCORD_REDIRECT_URI"),
+  discordRedirectUri: required("DISCORD_REDIRECT_URI"),
   ownerGoogleEmail: optional("OWNER_GOOGLE_EMAIL"),
   ownerDiscordId: optional("OWNER_DISCORD_ID"),
   resendApiKey: optional("RESEND_API_KEY"),
@@ -30,22 +30,16 @@ export const env = {
 };
 
 if (env.isProduction) {
-  if (!env.discordClientId) {
-    console.warn("[env] DISCORD_CLIENT_ID is not set — Discord OAuth will be disabled.");
-  }
-  if (!env.discordClientSecret) {
-    console.warn("[env] DISCORD_CLIENT_SECRET is not set — Discord OAuth will be disabled.");
-  }
   if (!env.googleClientId) {
     console.warn("[env] GOOGLE_CLIENT_ID is not set — Google OAuth will be disabled.");
   }
   if (!env.googleClientSecret) {
     console.warn("[env] GOOGLE_CLIENT_SECRET is not set — Google OAuth will be disabled.");
   }
-  if (!env.googleRedirectUri) {
-    console.warn("[env] GOOGLE_REDIRECT_URI is not set — Google OAuth will fail during token exchange.");
+  if (!env.discordClientId) {
+    console.warn("[env] DISCORD_CLIENT_ID is not set — Discord OAuth will be disabled.");
   }
-  if (!env.discordRedirectUri) {
-    console.warn("[env] DISCORD_REDIRECT_URI is not set — Discord OAuth will fall back to request-derived URI.");
+  if (!env.discordClientSecret) {
+    console.warn("[env] DISCORD_CLIENT_SECRET is not set — Discord OAuth will be disabled.");
   }
 }

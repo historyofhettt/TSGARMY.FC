@@ -135,25 +135,11 @@ export function createGoogleCallbackHandler() {
     }
 
     try {
-      const state = c.req.query("state");
-      let redirectUriUsed: string;
-      if (env.googleRedirectUri) {
-        redirectUriUsed = env.googleRedirectUri;
-      } else {
-        const expectedBase = c.req.url.split("/api/oauth/google")[0];
-        redirectUriUsed = `${expectedBase}/api/oauth/google/callback`;
-        if (state) {
-          try {
-            const decoded = atob(state);
-            const parsed = new URL(decoded);
-            if (parsed.origin === new URL(redirectUriUsed).origin) {
-              redirectUriUsed = decoded;
-            }
-          } catch {
-            // keep fallback redirectUri
-          }
-        }
+      if (!env.googleRedirectUri) {
+        console.error("[Google OAuth] GOOGLE_REDIRECT_URI is not configured");
+        throw new Error("Google OAuth is not configured. Missing GOOGLE_REDIRECT_URI.");
       }
+      const redirectUriUsed = env.googleRedirectUri;
       console.info("[Google OAuth] Using redirect_uri for token exchange", { redirectUri: redirectUriUsed });
       const tokenResp = await exchangeCodeForTokens(code, redirectUriUsed);
       const profile = await fetchGoogleProfile(tokenResp.access_token);

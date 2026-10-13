@@ -14,7 +14,10 @@ function getGoogleOAuthUrl(username?: string) {
   if (!clientId) {
     throw new Error("Google OAuth is not configured. Missing VITE_GOOGLE_CLIENT_ID.");
   }
-  const redirectUri = import.meta.env.VITE_GOOGLE_REDIRECT_URI || `${window.location.origin}/api/oauth/google/callback`;
+  const redirectUri = import.meta.env.VITE_GOOGLE_REDIRECT_URI;
+  if (!redirectUri) {
+    throw new Error("Google OAuth is not configured. Missing VITE_GOOGLE_REDIRECT_URI.");
+  }
   const state = btoa(redirectUri);
   const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
   url.searchParams.set("client_id", clientId);
@@ -32,7 +35,10 @@ function getDiscordOAuthUrl(username?: string) {
   if (!clientId) {
     throw new Error("Discord OAuth is not configured. Missing VITE_DISCORD_CLIENT_ID.");
   }
-  const redirectUri = `${window.location.origin}/api/oauth/discord/callback`;
+  const redirectUri = import.meta.env.VITE_DISCORD_REDIRECT_URI;
+  if (!redirectUri) {
+    throw new Error("Discord OAuth is not configured. Missing VITE_DISCORD_REDIRECT_URI.");
+  }
   const state = btoa(redirectUri);
   const url = new URL("https://discord.com/api/oauth2/authorize");
   url.searchParams.set("client_id", clientId);
