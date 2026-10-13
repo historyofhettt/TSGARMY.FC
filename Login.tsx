@@ -14,7 +14,7 @@ function getGoogleOAuthUrl(username?: string) {
   if (!clientId) {
     throw new Error("Google OAuth is not configured. Missing VITE_GOOGLE_CLIENT_ID.");
   }
-  const redirectUri = `${window.location.origin}/api/oauth/google/callback`;
+  const redirectUri = import.meta.env.VITE_GOOGLE_REDIRECT_URI || `${window.location.origin}/api/oauth/google/callback`;
   const state = btoa(redirectUri);
   const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
   url.searchParams.set("client_id", clientId);
