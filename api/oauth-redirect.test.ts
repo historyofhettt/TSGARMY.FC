@@ -206,7 +206,7 @@ describe("OAuth redirect_uri consistency: frontend and backend use identical URL
 
     const originalFetch = global.fetch;
     global.fetch = vi.fn((input: unknown, init?: unknown) => {
-      if (typeof input === "string" && input.includes("discord.com/api/oauth2/token")) {
+      if (typeof input === "string" && input.includes("discord.com/api/v10/oauth2/token")) {
         const body = (init as { body?: string })?.body;
         if (body) {
           capturedRedirectUri = new URLSearchParams(body).get("redirect_uri") ?? undefined;
@@ -232,5 +232,80 @@ describe("OAuth redirect_uri consistency: frontend and backend use identical URL
     expect(capturedRedirectUri).toBe(DISCORD_CALLBACK);
     expect(capturedRedirectUri).not.toContain("localhost");
     expect(capturedRedirectUri).not.toContain("8080");
+  });
+
+  it("Discord callback returns 429 when Discord returns 429 on token exchange", async () => {
+    const { createDiscordCallbackHandler } = await import("./discord/auth");
+
+    const handler = createDiscordCallbackHandler();
+
+    const mockC = {
+      req: {
+        query: (k: string) => {
+          if (k === "code") return "test-auth-code";
+          if (k === "error") return null;
+          return null;
+        },
+        url: "http://localhost:8080/api/oauth/discord/callback?code=test-auth-code",
+        raw: { headers: new Headers() },
+      },
+      res: { headers: new Headers() },
+      json: (data: unknown, status?: number) => ({ data, status }),
+      redirect: () => ({}),
+    } as unknown as Context;
+
+    const originalFetch = global.fetch;
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: false,
+        status: 429,
+        headers: new Headers({ "Retry-After": "60" }),
+        text: () =>
+          Promise.resolve(
+            JSON.stringify({ message: "You are being rate limited.", retry_after: 60.0, global: false }),
+          ),
+      } as Response),
+    );
+
+    const result = await handler(mockC);
+    expect(result.status).toBe(429);
+    expect(result.data).toHaveProperty("error");
+
+    global.fetch = originalFetch;
+  });
+
+  it("Discord callback returns 502 when Discord returns 401 (invalid credentials), not 429", async () => {
+    const { createDiscordCallbackHandler } = await import("./discord/auth");
+
+    const handler = createDiscordCallbackHandler();
+
+    const mockC = {
+      req: {
+        query: (k: string) => {
+          if (k === "code") return "test-auth-code";
+          if (k === "error") return null;
+          return null;
+        },
+        url: "http://localhost:8080/api/oauth/discord/callback?code=test-auth-code",
+        raw: { headers: new Headers() },
+      },
+      res: { headers: new Headers() },
+      json: (data: unknown, status?: number) => ({ data, status }),
+      redirect: () => ({}),
+    } as unknown as Context;
+
+    const originalFetch = global.fetch;
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: false,
+        status: 401,
+        headers: new Headers(),
+        text: () => Promise.resolve('{"error": "invalid_client"}'),
+      } as Response),
+    );
+
+    const result = await handler(mockC);
+    expect(result.status).toBe(502);
+    global.fetch = originalFetch;
   });
 });
