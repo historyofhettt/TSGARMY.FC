@@ -10,22 +10,22 @@ RUN npm ci --include=dev --no-audit --no-fund
 
 COPY . .
 
-# Declare build-time ARGs for OAuth configuration (passed from Render)
-# These are consumed by Vite at build time (VITE_*) and by the server at runtime
+# Build-time ARGs for OAuth configuration.
+# VITE_* vars are inlined by Vite into the production JS bundle (frontend).
+# *_REDIRECT_URI vars are also passed through for the server runtime.
+# Render must supply these as Render Build Args (not hardcode here).
+# Client secrets (GOOGLE_CLIENT_SECRET, DISCORD_CLIENT_SECRET) must NOT be
+# VITE_* vars — they are injected at runtime from Render environment.
 ARG VITE_GOOGLE_CLIENT_ID
 ARG VITE_GOOGLE_REDIRECT_URI
 ARG VITE_DISCORD_CLIENT_ID
 ARG VITE_DISCORD_REDIRECT_URI
-ARG GOOGLE_REDIRECT_URI
-ARG DISCORD_REDIRECT_URI
 
-# Export as env vars so Vite can read VITE_* and the server can read *_REDIRECT_URI
+# Export all as ENV so both Vite (build) and the server (runtime) can read them
 ENV VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
 ENV VITE_GOOGLE_REDIRECT_URI=${VITE_GOOGLE_REDIRECT_URI}
 ENV VITE_DISCORD_CLIENT_ID=${VITE_DISCORD_CLIENT_ID}
 ENV VITE_DISCORD_REDIRECT_URI=${VITE_DISCORD_REDIRECT_URI}
-ENV GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
-ENV DISCORD_REDIRECT_URI=${DISCORD_REDIRECT_URI}
 
 RUN if [ -z "$VITE_DISCORD_CLIENT_ID" ]; then \
       echo "ERROR: VITE_DISCORD_CLIENT_ID missing during build"; exit 1; \
