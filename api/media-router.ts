@@ -1228,15 +1228,7 @@ function sanitizeUrl(input: string): string {
 
 /** Read file bytes from local storage for ZIP generation. */
 async function downloadFileBytes(fileKey: string): Promise<Uint8Array | null> {
-  try {
-    const fs = await import("fs/promises");
-    const path = await import("path");
-    const UPLOAD_ROOT = path.resolve(process.cwd(), "public/uploads");
-    const fullPath = path.join(UPLOAD_ROOT, fileKey);
-    return new Uint8Array(await fs.readFile(fullPath));
-  } catch {
-    return null;
-  }
+  return storage.readBytes(fileKey);
 }
 
 /** Resolve a storage key to a local file path and read its bytes for ZIP. */
