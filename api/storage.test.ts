@@ -9,6 +9,9 @@ describe("storage upload path resolution", () => {
     process.env.APP_ID = "test";
     process.env.APP_SECRET = "test";
     process.env.DATABASE_URL = "mysql://test:test@localhost:3306/testdb";
+    process.env.AWS_ACCESS_KEY_ID = "test-key";
+    process.env.AWS_SECRET_ACCESS_KEY = "test-secret";
+    process.env.S3_BUCKET = "test-bucket";
     vi.resetModules();
 
     const { UPLOAD_ROOT } = await import("./lib/storage");

@@ -27,6 +27,13 @@ export const env = {
   ownerDiscordId: optional("OWNER_DISCORD_ID"),
   resendApiKey: optional("RESEND_API_KEY"),
   emailFrom: optional("EMAIL_FROM"),
+  awsAccessKeyId: optional("AWS_ACCESS_KEY_ID"),
+  awsSecretAccessKey: optional("AWS_SECRET_ACCESS_KEY"),
+  awsRegion: optional("AWS_REGION") || optional("S3_REGION") || "us-east-1",
+  s3Bucket: optional("S3_BUCKET"),
+  s3Endpoint: optional("S3_ENDPOINT"),
+  s3ForcePathStyle: optional("S3_FORCE_PATH_STYLE") === "true",
+  cdnBaseUrl: optional("CDN_BASE_URL"),
 };
 
 if (env.isProduction) {
@@ -42,4 +49,21 @@ if (env.isProduction) {
   if (!env.discordClientSecret) {
     console.warn("[env] DISCORD_CLIENT_SECRET is not set — Discord OAuth will be disabled.");
   }
+  if (!env.s3Bucket) {
+    console.warn("[env] S3_BUCKET is not set — media uploads will use local filesystem (ephemeral on Render).");
+  }
+}
+
+export const s3Enabled = !!(
+  env.s3Bucket &&
+  env.awsAccessKeyId &&
+  env.awsSecretAccessKey
+);
+
+export function checkS3Enabled(): boolean {
+  return !!(
+    env.s3Bucket &&
+    env.awsAccessKeyId &&
+    env.awsSecretAccessKey
+  );
 }
