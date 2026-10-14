@@ -81,11 +81,17 @@ describe("OAuth redirect_uri consistency: frontend and backend use identical URL
 
     const { createGoogleCallbackHandler } = await import("./google/auth");
 
+    const validState = btoa(JSON.stringify({ nonce: "test-nonce" }));
     const mockC = {
       req: {
         query: (k: string) => {
           if (k === "code") return "test-auth-code";
           if (k === "error") return null;
+          if (k === "state") return validState;
+          return null;
+        },
+        header: (k: string) => {
+          if (k === "cookie") return `oauth_state=${validState}; oauth_nonce=test-nonce`;
           return null;
         },
       },
@@ -103,11 +109,17 @@ describe("OAuth redirect_uri consistency: frontend and backend use identical URL
 
     const { createDiscordCallbackHandler } = await import("./discord/auth");
 
+    const validState = btoa(JSON.stringify({ nonce: "test-nonce" }));
     const mockC = {
       req: {
         query: (k: string) => {
           if (k === "code") return "test-auth-code";
           if (k === "error") return null;
+          if (k === "state") return validState;
+          return null;
+        },
+        header: (k: string) => {
+          if (k === "cookie") return `oauth_state=${validState}; oauth_nonce=test-nonce`;
           return null;
         },
       },
@@ -133,6 +145,7 @@ describe("OAuth redirect_uri consistency: frontend and backend use identical URL
     const { env } = await import("./lib/env");
 
     let capturedRedirectUri: string | undefined;
+    const validState = btoa(JSON.stringify({ nonce: "test-nonce" }));
 
     const handler = createGoogleCallbackHandler();
 
@@ -141,10 +154,15 @@ describe("OAuth redirect_uri consistency: frontend and backend use identical URL
         query: (k: string) => {
           if (k === "code") return "test-auth-code";
           if (k === "error") return null;
+          if (k === "state") return validState;
           return null;
         },
         url: "http://localhost:8080/api/oauth/google/callback?code=test-auth-code",
         raw: { headers: new Headers() },
+        header: (k: string) => {
+          if (k === "cookie") return `oauth_state=${validState}; oauth_nonce=test-nonce`;
+          return null;
+        },
       },
       res: { headers: new Headers() },
       json: () => ({}),
@@ -186,6 +204,7 @@ describe("OAuth redirect_uri consistency: frontend and backend use identical URL
     const { env } = await import("./lib/env");
 
     let capturedRedirectUri: string | undefined;
+    const validState = btoa(JSON.stringify({ nonce: "test-nonce" }));
 
     const handler = createDiscordCallbackHandler();
 
@@ -194,10 +213,15 @@ describe("OAuth redirect_uri consistency: frontend and backend use identical URL
         query: (k: string) => {
           if (k === "code") return "test-auth-code";
           if (k === "error") return null;
+          if (k === "state") return validState;
           return null;
         },
         url: "http://localhost:8080/api/oauth/discord/callback?code=test-auth-code",
-        raw: { headers: new Headers() },
+         raw: { headers: new Headers() },
+        header: (k: string) => {
+          if (k === "cookie") return `oauth_state=${validState}; oauth_nonce=test-nonce`;
+          return null;
+        },
       },
       res: { headers: new Headers() },
       json: () => ({}),
@@ -238,16 +262,22 @@ describe("OAuth redirect_uri consistency: frontend and backend use identical URL
     const { createDiscordCallbackHandler } = await import("./discord/auth");
 
     const handler = createDiscordCallbackHandler();
+    const validState = btoa(JSON.stringify({ nonce: "test-nonce" }));
 
     const mockC = {
       req: {
         query: (k: string) => {
           if (k === "code") return "test-auth-code";
           if (k === "error") return null;
+          if (k === "state") return validState;
           return null;
         },
         url: "http://localhost:8080/api/oauth/discord/callback?code=test-auth-code",
-        raw: { headers: new Headers() },
+         raw: { headers: new Headers() },
+        header: (k: string) => {
+          if (k === "cookie") return `oauth_state=${validState}; oauth_nonce=test-nonce`;
+          return null;
+        },
       },
       res: { headers: new Headers() },
       json: (data: unknown, status?: number) => ({ data, status }),
@@ -278,16 +308,22 @@ describe("OAuth redirect_uri consistency: frontend and backend use identical URL
     const { createDiscordCallbackHandler } = await import("./discord/auth");
 
     const handler = createDiscordCallbackHandler();
+    const validState = btoa(JSON.stringify({ nonce: "test-nonce" }));
 
     const mockC = {
       req: {
         query: (k: string) => {
           if (k === "code") return "test-auth-code";
           if (k === "error") return null;
+          if (k === "state") return validState;
           return null;
         },
         url: "http://localhost:8080/api/oauth/discord/callback?code=test-auth-code",
-        raw: { headers: new Headers() },
+         raw: { headers: new Headers() },
+        header: (k: string) => {
+          if (k === "cookie") return `oauth_state=${validState}; oauth_nonce=test-nonce`;
+          return null;
+        },
       },
       res: { headers: new Headers() },
       json: (data: unknown, status?: number) => ({ data, status }),
@@ -307,5 +343,110 @@ describe("OAuth redirect_uri consistency: frontend and backend use identical URL
     const result = await handler(mockC);
     expect(result.status).toBe(502);
     global.fetch = originalFetch;
+  });
+
+  const buildMockContext = (overrides: {
+    state?: string | null;
+    code?: string | null;
+    cookies?: Record<string, string>;
+  }) => {
+    const cookies = overrides.cookies ?? {};
+    const cookieHeader = Object.entries(cookies)
+      .map(([k, v]) => `${k}=${v}`)
+      .join("; ");
+    return {
+      req: {
+        query: (k: string) => {
+          if (k === "code") return overrides.code ?? null;
+          if (k === "error") return null;
+          if (k === "state") return overrides.state ?? null;
+          return null;
+        },
+        url: "http://localhost:8080/api/oauth/discord/callback?code=test-auth-code",
+        raw: { headers: new Headers() },
+        header: (k: string) => (k === "cookie" ? cookieHeader : null),
+      },
+      res: { headers: new Headers() },
+      json: (data: unknown, status?: number) => ({ data, status }),
+      redirect: () => ({}),
+    } as unknown as Context;
+  };
+
+  it("Google callback rejects missing state parameter (CSRF protection)", async () => {
+    const { createGoogleCallbackHandler } = await import("./google/auth");
+    const handler = createGoogleCallbackHandler();
+
+    const mockC = buildMockContext({ code: "test-auth-code", state: null });
+    const result = await handler(mockC) as unknown as { status: number; data: { error: string } };
+    expect(result.status).toBe(400);
+    expect(result.data).toEqual({ error: "Invalid OAuth state. Possible CSRF attempt." });
+  });
+
+  it("Google callback rejects state that doesn't match cookie (CSRF protection)", async () => {
+    const { createGoogleCallbackHandler } = await import("./google/auth");
+    const handler = createGoogleCallbackHandler();
+
+    const mockC = buildMockContext({
+      code: "test-auth-code",
+      state: "different-state",
+      cookies: { oauth_state: "expected-state" },
+    });
+    const result = await handler(mockC) as unknown as { status: number; data: { error: string } };
+    expect(result.status).toBe(400);
+    expect(result.data).toEqual({ error: "Invalid OAuth state. Possible CSRF attempt." });
+  });
+
+  it("Google callback rejects state with invalid nonce (CSRF protection)", async () => {
+    const { createGoogleCallbackHandler } = await import("./google/auth");
+    const handler = createGoogleCallbackHandler();
+
+    const state = btoa(JSON.stringify({ nonce: "wrong-nonce" }));
+    const mockC = buildMockContext({
+      code: "test-auth-code",
+      state,
+      cookies: { oauth_state: state, oauth_nonce: "right-nonce" },
+    });
+    const result = await handler(mockC) as unknown as { status: number; data: { error: string } };
+    expect(result.status).toBe(400);
+    expect(result.data).toEqual({ error: "Invalid OAuth state. Possible CSRF attempt." });
+  });
+
+  it("Discord callback rejects missing state parameter (CSRF protection)", async () => {
+    const { createDiscordCallbackHandler } = await import("./discord/auth");
+    const handler = createDiscordCallbackHandler();
+
+    const mockC = buildMockContext({ code: "test-auth-code", state: null });
+    const result = await handler(mockC) as unknown as { status: number; data: { error: string } };
+    expect(result.status).toBe(400);
+    expect(result.data).toEqual({ error: "Invalid OAuth state. Possible CSRF attempt." });
+  });
+
+  it("Discord callback rejects state that doesn't match cookie (CSRF protection)", async () => {
+    const { createDiscordCallbackHandler } = await import("./discord/auth");
+    const handler = createDiscordCallbackHandler();
+
+    const mockC = buildMockContext({
+      code: "test-auth-code",
+      state: "different-state",
+      cookies: { oauth_state: "expected-state" },
+    });
+    const result = await handler(mockC) as unknown as { status: number; data: { error: string } };
+    expect(result.status).toBe(400);
+    expect(result.data).toEqual({ error: "Invalid OAuth state. Possible CSRF attempt." });
+  });
+
+  it("Discord callback rejects state with invalid nonce (CSRF protection)", async () => {
+    const { createDiscordCallbackHandler } = await import("./discord/auth");
+    const handler = createDiscordCallbackHandler();
+
+    const state = btoa(JSON.stringify({ nonce: "wrong-nonce" }));
+    const mockC = buildMockContext({
+      code: "test-auth-code",
+      state,
+      cookies: { oauth_state: state, oauth_nonce: "right-nonce" },
+    });
+    const result = await handler(mockC) as unknown as { status: number; data: { error: string } };
+    expect(result.status).toBe(400);
+    expect(result.data).toEqual({ error: "Invalid OAuth state. Possible CSRF attempt." });
   });
 });

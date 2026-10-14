@@ -9,6 +9,23 @@ import { Label } from "@/components/ui/label";
 
 type View = "login" | "register" | "register-username" | "forgot" | "otp" | "reset" | "success";
 
+interface OAuthStatePayload {
+  redirect?: string;
+  username?: string;
+  nonce: string;
+}
+
+function encodeState(payload: OAuthStatePayload): string {
+  const json = JSON.stringify(payload);
+  return btoa(json);
+}
+
+function generateNonce(): string {
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return Array.from(array, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 function getGoogleOAuthUrl(username?: string) {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   if (!clientId) {
@@ -18,7 +35,9 @@ function getGoogleOAuthUrl(username?: string) {
   if (!redirectUri) {
     throw new Error("Google OAuth is not configured. Missing VITE_GOOGLE_REDIRECT_URI.");
   }
-  const state = btoa(redirectUri);
+  const nonce = generateNonce();
+  const payload: OAuthStatePayload = { nonce, ...(username ? { username } : {}) };
+  const state = encodeState(payload);
   const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
   url.searchParams.set("client_id", clientId);
   url.searchParams.set("redirect_uri", redirectUri);
@@ -26,7 +45,8 @@ function getGoogleOAuthUrl(username?: string) {
   url.searchParams.set("scope", "openid profile email");
   url.searchParams.set("state", state);
   url.searchParams.set("prompt", "select_account");
-  if (username) url.searchParams.set("username", username);
+  document.cookie = `oauth_state=${state}; path=/; SameSite=Lax; Secure`;
+  document.cookie = `oauth_nonce=${nonce}; path=/; SameSite=Lax; Secure`;
   return url.toString();
 }
 
@@ -35,18 +55,21 @@ function getDiscordOAuthUrl(username?: string) {
   if (!clientId) {
     throw new Error("Discord OAuth is not configured. Missing VITE_DISCORD_CLIENT_ID.");
   }
-  const redirectUri = import.meta.env.VITE_DISCORD_REDIRECT_URI;
+    const redirectUri = import.meta.env.VITE_DISCORD_REDIRECT_URI;
   if (!redirectUri) {
     throw new Error("Discord OAuth is not configured. Missing VITE_DISCORD_REDIRECT_URI.");
   }
-  const state = btoa(redirectUri);
+  const nonce = generateNonce();
+  const payload: OAuthStatePayload = { nonce, ...(username ? { username } : {}) };
+  const state = encodeState(payload);
   const url = new URL("https://discord.com/api/oauth2/authorize");
   url.searchParams.set("client_id", clientId);
   url.searchParams.set("redirect_uri", redirectUri);
   url.searchParams.set("response_type", "code");
   url.searchParams.set("scope", "identify email");
   url.searchParams.set("state", state);
-  if (username) url.searchParams.set("username", username);
+  document.cookie = `oauth_state=${state}; path=/; SameSite=Lax; Secure`;
+  document.cookie = `oauth_nonce=${nonce}; path=/; SameSite=Lax; Secure`;
   return url.toString();
 }
 

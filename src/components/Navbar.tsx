@@ -65,21 +65,21 @@ export function Navbar() {
           scrolled ? "glass-strong shadow-lg shadow-black/40" : "bg-transparent",
         )}
       >
-        <nav className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 md:px-8" aria-label="Main">
-          <Link to="/" className="flex items-center gap-2.5" aria-label="TSG home">
+        <nav className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 md:px-8" aria-label="Main">
+          <Link to="/" className="flex-shrink-0 flex items-center gap-2.5" aria-label="TSG home">
             {org?.logoUrl ? (
-              <img src={org.logoUrl} alt="TSG logo" className="h-9 w-9 rounded-md object-contain" />
+              <img src={org.logoUrl} alt="TSG logo" className="h-9 w-9 shrink-0 rounded-md object-contain" />
             ) : (
-              <span className="flex h-9 w-9 items-center justify-center rounded-md bg-gradient-to-br from-[hsl(var(--tsg-blue))] to-[hsl(var(--tsg-red))] font-display text-sm font-black text-white">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-[hsl(var(--tsg-blue))] to-[hsl(var(--tsg-red))] font-display text-sm font-black text-white">
                 TSG
               </span>
             )}
-            <span className="hidden font-display text-sm font-bold tracking-[0.2em] sm:block">
+            <span className="hidden font-display text-sm font-bold tracking-[0.2em] sm:block sm:shrink-0">
               {org?.shortName ?? "TSG"}
             </span>
           </Link>
 
-          <div className="ml-auto hidden items-center gap-1 lg:flex">
+          <div className="ml-auto hidden shrink-0 items-center gap-1 lg:flex">
             {NAV.map((item) => (
               <NavLink
                 key={item.to}
@@ -87,7 +87,7 @@ export function Navbar() {
                 end={item.to === "/"}
                 className={({ isActive }) =>
                   cn(
-                    "relative px-3 py-2 text-[13px] font-semibold tracking-[0.14em] transition-colors",
+                    "relative shrink-0 min-w-fit px-3 py-2 text-[13px] font-semibold tracking-[0.14em] transition-colors",
                     isActive
                       ? "text-[hsl(var(--tsg-blue))]"
                       : "text-muted-foreground hover:text-foreground",
@@ -99,7 +99,7 @@ export function Navbar() {
                     {item.label}
                     <span
                       className={cn(
-                        "absolute inset-x-3 -bottom-0.5 h-0.5 origin-left rounded-full bg-[hsl(var(--tsg-blue))] transition-transform duration-300",
+                        "absolute inset-x-1 -bottom-0.5 h-0.5 origin-left rounded-full bg-[hsl(var(--tsg-blue))] transition-transform duration-300",
                         isActive ? "scale-x-100" : "scale-x-0",
                       )}
                     />
@@ -110,14 +110,14 @@ export function Navbar() {
             {isStaff && (
               <NavLink
                 to={staffPath}
-                className="ml-1 flex items-center gap-1.5 rounded-md border border-[hsl(var(--tsg-red)/0.5)] bg-[hsl(var(--tsg-red)/0.12)] px-3 py-1.5 text-[13px] font-bold tracking-wider text-[hsl(var(--tsg-red))] transition hover:bg-[hsl(var(--tsg-red)/0.22)]"
+                className="ml-1 shrink-0 min-w-fit flex items-center gap-1.5 rounded-md border border-[hsl(var(--tsg-red)/0.5)] bg-[hsl(var(--tsg-red)/0.12)] px-3 py-1.5 text-[13px] font-bold tracking-wider text-[hsl(var(--tsg-red))] transition hover:bg-[hsl(var(--tsg-red)/0.22)]"
               >
                 <Shield className="h-3.5 w-3.5" /> {staffLabel}
               </NavLink>
             )}
           </div>
 
-          <div className="ml-auto flex items-center gap-2 lg:ml-2">
+          <div className="ml-auto flex shrink-0 items-center gap-2 lg:ml-2">
             <button
               onClick={() => setSearchOpen(true)}
               aria-label="Search"
