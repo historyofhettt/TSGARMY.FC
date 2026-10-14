@@ -250,7 +250,15 @@ export const authRouter = createRouter({
           used: false,
         });
 
-      await sendOtpEmail(input.email, otp);
+      try {
+        await sendOtpEmail(input.email, otp);
+      } catch (emailError: unknown) {
+        const msg = emailError instanceof Error ? emailError.message : String(emailError);
+        console.error("[auth] forgotPassword: failed to send OTP email", {
+          email: input.email,
+          error: msg.substring(0, 200),
+        });
+      }
 
       return { success: true, message: "If an account exists, an OTP has been sent." };
     }),
