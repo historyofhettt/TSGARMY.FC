@@ -28,7 +28,7 @@ export default function Schedule() {
         <SectionHeading
           kicker="Calendar"
           title="SCHEDULE"
-          description="Daily tournament schedule for both TSG rosters."
+          description="Daily tournament schedule for TSG rosters."
         />
 
         <div className="mb-10 flex flex-wrap gap-2" aria-label="Filter schedule by team">
