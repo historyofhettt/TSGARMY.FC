@@ -90,7 +90,7 @@ export default function Home() {
               to="/teams/tsg-army"
               className="w-full rounded-lg border border-[hsl(var(--tsg-blue)/0.6)] bg-[hsl(var(--tsg-blue)/0.12)] px-7 py-3 font-display text-sm font-bold tracking-[0.15em] text-[hsl(var(--tsg-blue))] transition hover:bg-[hsl(var(--tsg-blue)/0.25)] hover:glow-blue sm:w-auto"
             >
-              EXPLORE TSG ARMY
+              EXPLORE TSG PROS
             </Link>
             <Link
               to="/teams/tsg-artemis"
