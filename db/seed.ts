@@ -28,7 +28,7 @@ async function seed() {
       shortName: "TSG",
       tagline: "Built for Competition. Driven by Legacy.",
       description:
-        "Two Side Gamers (TSG) is a professional esports organization fielding two competitive rosters — TSG ARMY and TSG ARTEMIS.",
+        "Two Side Gamers (TSG) is a professional esports organization.",
     });
   }
 
