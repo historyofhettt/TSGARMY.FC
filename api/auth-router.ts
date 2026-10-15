@@ -258,6 +258,10 @@ export const authRouter = createRouter({
           email: input.email,
           error: msg.substring(0, 200),
         });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to send verification email. Please try again.",
+        });
       }
 
       return { success: true, message: "If an account exists, an OTP has been sent." };
@@ -271,6 +275,13 @@ export const authRouter = createRouter({
       }),
     )
     .mutation(async ({ input }) => {
+      if (!checkRateLimit(`otp:${input.email}`)) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: "Too many verification attempts. Please try again later.",
+        });
+      }
+
       const user = await findUserByEmail(input.email);
       if (!user || user.provider !== "local") {
         throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid OTP" });
@@ -316,6 +327,13 @@ export const authRouter = createRouter({
       }),
     )
     .mutation(async ({ input }) => {
+      if (!checkRateLimit(`reset:${input.email}`)) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: "Too many attempts. Please try again later.",
+        });
+      }
+
       if (input.newPassword !== input.confirmPassword) {
         throw new TRPCError({
           code: "BAD_REQUEST",

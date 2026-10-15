@@ -149,6 +149,7 @@ describe("OAuth redirect_uri consistency: frontend and backend use identical URL
 
     const handler = createGoogleCallbackHandler();
 
+    const resHeaders = new Headers();
     const mockC = {
       req: {
         query: (k: string) => {
@@ -164,8 +165,13 @@ describe("OAuth redirect_uri consistency: frontend and backend use identical URL
           return null;
         },
       },
-      res: { headers: new Headers() },
-      json: () => ({}),
+      res: { headers: resHeaders },
+      header: (key: string, value?: string, opts?: { append?: boolean }) => {
+        if (value === undefined) return resHeaders.get(key);
+        if (opts?.append) resHeaders.append(key, value);
+        else resHeaders.set(key, value);
+      },
+      json: (data: unknown, status?: number) => ({ data, status }),
       redirect: () => ({}),
     } as unknown as Context;
 
@@ -448,5 +454,194 @@ describe("OAuth redirect_uri consistency: frontend and backend use identical URL
     const result = await handler(mockC) as unknown as { status: number; data: { error: string } };
     expect(result.status).toBe(400);
     expect(result.data).toEqual({ error: "Invalid OAuth state. Possible CSRF attempt." });
+  });
+
+  it("Discord callback rejects missing code parameter", async () => {
+    const { createDiscordCallbackHandler } = await import("./discord/auth");
+    const handler = createDiscordCallbackHandler();
+
+    const mockC = buildMockContext({ code: null, state: "some-state" });
+    const result = await handler(mockC) as unknown as { status: number; data: { error: string } };
+    expect(result.status).toBe(400);
+    expect(result.data).toEqual({ error: "Missing authorization code" });
+  });
+
+  it("Discord callback rejects error parameter redirect", async () => {
+    const { createDiscordCallbackHandler } = await import("./discord/auth");
+    const handler = createDiscordCallbackHandler();
+
+    const mockC = {
+      req: {
+        query: (k: string) => (k === "error" ? "access_denied" : null),
+        header: () => null,
+      },
+      redirect: (url: string, status: number) => ({ url, status }),
+    } as unknown as Context;
+
+    const result = await handler(mockC);
+    expect(result.url).toBe("/");
+    expect(result.status).toBe(302);
+  });
+
+  it("Discord callback creates session on successful OAuth flow", async () => {
+    // Mock findUserByProvider and upsertUser BEFORE importing the handler
+    const mockUpsertUser = vi.fn().mockResolvedValue(undefined);
+    const mockFindUser = vi.fn().mockResolvedValue({
+      id: 12345,
+      role: "admin",
+    });
+    vi.doMock("./queries/users", () => ({
+      upsertUser: mockUpsertUser,
+      findUserByProvider: mockFindUser,
+    }));
+
+    const { createDiscordCallbackHandler } = await import("./discord/auth");
+    const { env } = await import("./lib/env");
+
+    const handler = createDiscordCallbackHandler();
+    const validState = btoa(JSON.stringify({ nonce: "test-nonce", username: "newuser123" }));
+
+    const resHeaders = new Headers();
+    const mockC = {
+      req: {
+        query: (k: string) => {
+          if (k === "code") return "valid-auth-code";
+          if (k === "error") return null;
+          if (k === "state") return validState;
+          return null;
+        },
+        header: (k: string) => {
+          if (k === "cookie") return `oauth_state=${validState}; oauth_nonce=test-nonce`;
+          return null;
+        },
+        raw: { headers: new Headers() },
+      },
+      res: { headers: resHeaders },
+      header: (key: string, value?: string, opts?: { append?: boolean }) => {
+        if (value === undefined) return resHeaders.get(key);
+        if (opts?.append) resHeaders.append(key, value);
+        else resHeaders.set(key, value);
+      },
+      json: (data: unknown, status?: number) => ({ data, status }),
+      redirect: (url: string, status: number) => ({ url, status }),
+    } as unknown as Context;
+
+    global.fetch = vi.fn((input: unknown) => {
+      const url = typeof input === "string" ? input : "";
+      if (url.includes("discord.com/api/v10/oauth2/token")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            access_token: "mock-access-token",
+            token_type: "Bearer",
+            expires_in: 604800,
+            scope: "identify email",
+          }),
+        } as Response);
+      }
+      if (url.includes("discord.com/api/v10/users/@me")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            id: "123456789",
+            username: "discorduser",
+            discriminator: "0001",
+            avatar: "abc123",
+            global_name: "Discord User",
+          }),
+        } as Response);
+      }
+      return Promise.reject(new Error("Unexpected fetch"));
+    }) as unknown as typeof fetch;
+
+    expect(env.discordRedirectUri).toBe(DISCORD_CALLBACK);
+    expect(env.discordClientId).toBe("test-discord-id");
+    expect(env.discordClientSecret).toBe("test-discord-secret");
+
+    const result = await handler(mockC);
+    expect(result.status).toBe(302);
+    expect(result.headers.get("Location")).toBe("/");
+    expect(mockFindUser).toHaveBeenCalled();
+    expect(mockUpsertUser).toHaveBeenCalled();
+
+    global.fetch = vi.fn() as unknown as typeof fetch;
+    vi.restoreAllMocks();
+  });
+
+  it("Discord callback uses env.DISCORD_REDIRECT_URI for token exchange (not localhost)", async () => {
+    // Mock findUserByProvider and upsertUser BEFORE importing the handler
+    const mockUpsertUser = vi.fn().mockResolvedValue(undefined);
+    const mockFindUser = vi.fn().mockResolvedValue({ id: 12345, role: "admin" });
+    vi.doMock("./queries/users", () => ({
+      upsertUser: mockUpsertUser,
+      findUserByProvider: mockFindUser,
+    }));
+
+    const { createDiscordCallbackHandler } = await import("./discord/auth");
+
+    const handler = createDiscordCallbackHandler();
+    const validState = btoa(JSON.stringify({ nonce: "test-nonce" }));
+
+    let capturedRedirectUri: string | undefined;
+
+    const resHeaders = new Headers();
+    const mockC = {
+      req: {
+        query: (k: string) => {
+          if (k === "code") return "test-auth-code";
+          if (k === "error") return null;
+          if (k === "state") return validState;
+          return null;
+        },
+        url: "http://localhost:8080/api/oauth/discord/callback?code=test-auth-code",
+        raw: { headers: new Headers() },
+        header: (k: string) => {
+          if (k === "cookie") return `oauth_state=${validState}; oauth_nonce=test-nonce`;
+          return null;
+        },
+      },
+      res: { headers: resHeaders },
+      header: (key: string, value?: string, opts?: { append?: boolean }) => {
+        if (value === undefined) return resHeaders.get(key);
+        if (opts?.append) resHeaders.append(key, value);
+        else resHeaders.set(key, value);
+      },
+      json: (data: unknown, status?: number) => ({ data, status }),
+      redirect: () => ({}),
+    } as unknown as Context;
+
+    global.fetch = vi.fn((input: unknown, init?: unknown) => {
+      const url = typeof input === "string" ? input : "";
+      if (url.includes("discord.com/api/v10/oauth2/token")) {
+        const body = (init as { body?: string })?.body;
+        if (body) {
+          capturedRedirectUri = new URLSearchParams(body).get("redirect_uri") ?? undefined;
+        }
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ access_token: "mock", token_type: "Bearer", expires_in: 600, scope: "" }),
+        } as Response);
+      }
+      if (url.includes("users/@me")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ id: "123", username: "test", discriminator: "0", avatar: null }),
+        } as Response);
+      }
+      return Promise.reject(new Error("Unexpected"));
+    }) as unknown as typeof fetch;
+
+    try {
+      await handler(mockC);
+    } catch {
+      // ok
+    }
+
+    expect(capturedRedirectUri).toBe(DISCORD_CALLBACK);
+    expect(capturedRedirectUri).not.toContain("localhost");
+    expect(capturedRedirectUri).not.toContain("8080");
+
+    global.fetch = vi.fn() as unknown as typeof fetch;
+    vi.restoreAllMocks();
   });
 });

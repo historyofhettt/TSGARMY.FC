@@ -1179,10 +1179,16 @@ export const adminRouter = createRouter({
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = getDb();
-      await db
+      const result = await db
         .update(players)
         .set({ status: "former", teamId: null, userId: null })
         .where(eq(players.id, input.id));
+      if ((result[0]?.affectedRows ?? 0) === 0) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Player not found.",
+        });
+      }
       return { ok: true };
     }),
 

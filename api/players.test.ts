@@ -20,6 +20,21 @@ function adminCtx(): TrpcContext {
   };
 }
 
+function nonAdminCtx(): TrpcContext {
+  return {
+    req: new Request("http://localhost/api/trpc/admin.deletePlayer"),
+    resHeaders: new Headers(),
+    user: {
+      id: 888, unionId: "union-888", name: "Regular User", email: null, avatar: null,
+      bio: null, instagram: null, role: "fan" as const, banned: false, provider: "local" as const,
+      providerId: "test-888", username: "testuser", passwordHash: "hash",
+      emailVerified: false, createdAt: new Date(), updatedAt: new Date(),
+      lastSignInAt: new Date(), xp: 0, usernameLower: "testuser",
+      featuredCardIds: null, hiddenCardIds: null,
+    },
+  };
+}
+
 describe("admin.deletePlayer — targets single record only", () => {
   const ts = Date.now();
   let testPlayerId: number;
@@ -89,7 +104,7 @@ describe("admin.deletePlayer — targets single record only", () => {
     const deleted = await db.select().from(players).where(eq(players.id, testPlayerId));
     const kept = await db.select().from(players).where(eq(players.id, otherPlayerId));
 
-    // The targeted player should be "former" with null teamId
+    // The targeted player should be "former" with null teamId and userId
     expect(deleted.at(0)?.status).toBe("former");
     expect(deleted.at(0)?.teamId).toBe(null);
     expect(deleted.at(0)?.userId).toBe(null);
@@ -98,5 +113,47 @@ describe("admin.deletePlayer — targets single record only", () => {
     expect(kept.at(0)?.status).toBe("active");
     expect(kept.at(0)?.teamId).toBe(testTeamId);
     expect(kept.at(0)?.ign).toContain("TestPlayer_Keep");
+  });
+
+  it("returns NOT_FOUND when deleting a non-existent ID", async () => {
+    const caller = appRouter.createCaller(adminCtx()).admin;
+
+    await expect(caller.deletePlayer({ id: 999999 })).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
+  });
+
+  it("does not affect any players when a non-existent ID is used", async () => {
+    const caller = appRouter.createCaller(adminCtx()).admin;
+
+    await expect(caller.deletePlayer({ id: 999999 })).rejects.toThrow();
+
+    const db = getDb();
+    const target = await db.select().from(players).where(eq(players.id, testPlayerId));
+    const other = await db.select().from(players).where(eq(players.id, otherPlayerId));
+
+    expect(target.at(0)?.status).toBe("active");
+    expect(target.at(0)?.teamId).toBe(testTeamId);
+    expect(other.at(0)?.status).toBe("active");
+    expect(other.at(0)?.teamId).toBe(testTeamId);
+  });
+});
+
+describe("admin.deletePlayer — unauthorized access is rejected", () => {
+  it("rejects a non-admin user with FORBIDDEN", async () => {
+    const caller = appRouter.createCaller(nonAdminCtx()).admin;
+    await expect(caller.deletePlayer({ id: 1 })).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+  });
+
+  it("rejects an unauthenticated context (no user)", async () => {
+    const caller = appRouter.createCaller({
+      req: new Request("http://localhost/api/trpc/admin.deletePlayer"),
+      resHeaders: new Headers(),
+    }).admin;
+    await expect(caller.deletePlayer({ id: 1 })).rejects.toMatchObject({
+      code: "UNAUTHORIZED",
+    });
   });
 });

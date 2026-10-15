@@ -78,6 +78,20 @@
        "when": 1791876000000,
        "tag": "0037_security_indexes",
        "breakpoints": false
+     },
+     {
+       "idx": 37,
+       "version": "5",
+       "when": 1791878000000,
+       "tag": "0038_card_milestones",
+       "breakpoints": false
+     },
+     {
+       "idx": 38,
+       "version": "5",
+       "when": 1791880000000,
+       "tag": "0039_card_milestones_safety",
+       "breakpoints": false
      }
    ]
  }

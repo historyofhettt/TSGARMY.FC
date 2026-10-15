@@ -49,6 +49,11 @@ if (env.isProduction) {
   if (!env.discordClientSecret) {
     console.warn("[env] DISCORD_CLIENT_SECRET is not set — Discord OAuth will be disabled.");
   }
+  if (!env.resendApiKey) {
+    console.warn("[env] RESEND_API_KEY is not set — password reset emails will fail.");
+  } else if (!env.emailFrom) {
+    console.warn("[env] EMAIL_FROM is not set — using default Resend sandbox sender.");
+  }
   if (!env.s3Bucket) {
     console.warn("[env] S3_BUCKET is not set — media uploads will use local filesystem (ephemeral on Render).");
   }

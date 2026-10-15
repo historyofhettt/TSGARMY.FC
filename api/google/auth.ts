@@ -6,6 +6,56 @@ import { Session } from "@contracts/constants";
 import { signSessionToken } from "../session";
 import { upsertUser, findUserByProvider } from "../queries/users";
 
+function getCookieValue(c: Context, key: string): string | undefined {
+  const cookieHeader = c.req.header("cookie");
+  if (!cookieHeader) return undefined;
+  const cookies = Object.fromEntries(
+    cookieHeader
+      .split(";")
+      .map((c) => c.trim())
+      .filter((c) => c.includes("="))
+      .map((c) => {
+        const [k, ...v] = c.split("=");
+        return [k, v.join("=")];
+      }),
+  );
+  return cookies[key];
+}
+
+function clearOauthCookie(c: Context, key: string) {
+  if (c.res?.headers) {
+    c.res.headers.append(
+      "Set-Cookie",
+      `${key}=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax`,
+    );
+  }
+}
+
+function validateOauthState(c: Context): { nonce: string; username?: string } | null {
+  const returnedState = c.req.query("state");
+  if (!returnedState) return null;
+
+  const cookieState = getCookieValue(c, "oauth_state");
+  if (!cookieState || cookieState !== returnedState) return null;
+
+  let payload: { nonce?: string; username?: string };
+  try {
+    payload = JSON.parse(atob(returnedState));
+  } catch {
+    return null;
+  }
+
+  if (!payload.nonce) return null;
+
+  const cookieNonce = getCookieValue(c, "oauth_nonce");
+  if (!cookieNonce || cookieNonce !== payload.nonce) return null;
+
+  clearOauthCookie(c, "oauth_state");
+  clearOauthCookie(c, "oauth_nonce");
+
+  return { nonce: payload.nonce, ...(payload.username ? { username: payload.username } : {}) };
+}
+
 async function exchangeCodeForTokens(code: string, redirectUri: string) {
   if (!env.googleClientId) {
     throw new Error("Google OAuth is not configured. Missing GOOGLE_CLIENT_ID.");
@@ -134,6 +184,11 @@ export function createGoogleCallbackHandler() {
       return c.json({ error: "Missing authorization code" }, 400);
     }
 
+    const state = validateOauthState(c);
+    if (!state) {
+      return c.json({ error: "Invalid OAuth state. Possible CSRF attempt." }, 400);
+    }
+
     try {
       if (!env.googleRedirectUri) {
         console.error("[Google OAuth] GOOGLE_REDIRECT_URI is not configured");
@@ -147,7 +202,7 @@ export function createGoogleCallbackHandler() {
         throw new Error("Failed to fetch Google profile");
       }
 
-      const username = c.req.query("username");
+      const username = state.username;
       const existingByProvider = await findUserByProvider("google", profile.sub);
 
       if (!username && !existingByProvider) {
