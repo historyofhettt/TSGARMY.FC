@@ -305,7 +305,7 @@ export const MEDIA_TYPES = ["photo", "video", "youtube", "drive"] as const;
 export type MediaType = (typeof MEDIA_TYPES)[number];
 
 /** Optional TSG tags that can be applied to media entries. */
-export const MEDIA_TAGS = ["TSG ARMY", "TSG ARTEMIS"] as const;
+export const MEDIA_TAGS = ["TSG ARMY", "TSG PROS", "TSG ARTEMIS"] as const;
 export type MediaTag = (typeof MEDIA_TAGS)[number];
 
 /**
