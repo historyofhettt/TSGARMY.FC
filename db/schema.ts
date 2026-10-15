@@ -357,7 +357,7 @@ export const players = mysqlTable(
   (t) => ({
     teamIdx: index("players_team_idx").on(t.teamId),
     userIdIdx: index("players_user_idx").on(t.userId),
-    ignIdx: uniqueIndex("players_ign_idx").on(t.ign),
+    ignIdx: index("players_ign_idx").on(t.ign),
     slugIdx: uniqueIndex("players_slug_idx").on(t.slug),
   }),
 );
