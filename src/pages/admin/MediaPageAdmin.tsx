@@ -1631,7 +1631,7 @@ function ConfigPanel({
     { key: "showTeamFilter", label: "Team filter", hint: "Allow filtering by team." },
     { key: "showCategoryFilter", label: "Category filter", hint: "Allow filtering by category." },
     { key: "showTournamentFilter", label: "Tournament filter", hint: "Allow filtering by tournament." },
-    { key: "showTagFilter", label: "Tag filter", hint: "Allow filtering by TSG ARMY / TSG ARTEMIS tags." },
+    { key: "showTagFilter", label: "Tag filter", hint: "Allow filtering by TSG ARMY / TSG PROS / TSG ARTEMIS tags." },
     { key: "showSearch", label: "Search", hint: "Show the search box." },
     { key: "showSorting", label: "Sorting", hint: "Show sort options (newest, oldest, featured, title)." },
     { key: "showDescriptions", label: "Descriptions", hint: "Show item descriptions on cards." },
