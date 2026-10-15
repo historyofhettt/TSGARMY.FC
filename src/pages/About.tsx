@@ -23,7 +23,7 @@ export default function About() {
           </p>
           <p className="mt-4 leading-relaxed text-muted-foreground">
             {org?.description ??
-              "Two Side Gamers (TSG) is a professional esports organization fielding two competitive rosters — TSG ARMY (male) and TSG ARTEMIS (female). We compete across premier tournaments with a focus on discipline, performance, and community."}
+              "Two Side Gamers (TSG) is a professional esports organization. We compete across premier tournaments with a focus on discipline, performance, and community."}
           </p>
         </div>
 
