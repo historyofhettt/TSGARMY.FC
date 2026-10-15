@@ -137,6 +137,20 @@ describe("admin.deletePlayer — targets single record only", () => {
     expect(other.at(0)?.status).toBe("active");
     expect(other.at(0)?.teamId).toBe(testTeamId);
   });
+
+  it("deleted player no longer appears in listPlayers after deletion", async () => {
+    const admin = appRouter.createCaller(adminCtx()).admin;
+
+    await admin.deletePlayer({ id: testPlayerId });
+
+    const listResult = await admin.listPlayers();
+
+    // The deleted player should NOT appear in the list
+    expect(listResult.find((p) => p.id === testPlayerId)).toBeUndefined();
+
+    // The kept player MUST still appear
+    expect(listResult.find((p) => p.id === otherPlayerId)).toBeDefined();
+  });
 });
 
 describe("admin.deletePlayer — unauthorized access is rejected", () => {

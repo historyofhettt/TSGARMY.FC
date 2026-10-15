@@ -1116,14 +1116,18 @@ export const adminRouter = createRouter({
     }),
 
   // ---------------------------------------------------------------- players
-  listPlayers: adminQuery
+   listPlayers: adminQuery
     .input(z.object({ teamId: z.number().optional() }).optional())
     .query(async ({ input }) => {
       const db = getDb();
       const list = await db
         .select()
         .from(players)
-        .where(input?.teamId ? eq(players.teamId, input.teamId) : undefined)
+        .where(
+          input?.teamId
+            ? and(eq(players.teamId, input.teamId), or(eq(players.status, "active"), eq(players.status, "substitute")))
+            : or(eq(players.status, "active"), eq(players.status, "substitute")),
+        )
         .orderBy(asc(players.displayOrder));
       const teamList = await db.select().from(teams);
       const urls = await signKeys(list.map((p) => p.photoKey));

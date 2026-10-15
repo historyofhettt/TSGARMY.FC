@@ -652,7 +652,9 @@ export const publicRouter = createRouter({
     .input(z.object({ teamId: z.number().optional() }).optional())
     .query(async ({ input }) => {
       const db = getDb();
-      const where = input?.teamId ? eq(players.teamId, input.teamId) : undefined;
+      const where = input?.teamId
+        ? and(eq(players.teamId, input.teamId), or(eq(players.status, "active"), eq(players.status, "substitute")))
+        : or(eq(players.status, "active"), eq(players.status, "substitute"));
       const list = await db
         .select()
         .from(players)
