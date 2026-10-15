@@ -1116,18 +1116,14 @@ export const adminRouter = createRouter({
     }),
 
   // ---------------------------------------------------------------- players
-   listPlayers: adminQuery
+  listPlayers: adminQuery
     .input(z.object({ teamId: z.number().optional() }).optional())
     .query(async ({ input }) => {
       const db = getDb();
       const list = await db
         .select()
         .from(players)
-        .where(
-          input?.teamId
-            ? and(eq(players.teamId, input.teamId), or(eq(players.status, "active"), eq(players.status, "substitute")))
-            : or(eq(players.status, "active"), eq(players.status, "substitute")),
-        )
+        .where(input?.teamId ? eq(players.teamId, input.teamId) : undefined)
         .orderBy(asc(players.displayOrder));
       const teamList = await db.select().from(teams);
       const urls = await signKeys(list.map((p) => p.photoKey));
@@ -1158,15 +1154,6 @@ export const adminRouter = createRouter({
     .mutation(async ({ input }) => {
       const db = getDb();
       const { id, ...data } = input;
-      const existing = await db.query.players.findFirst({
-        where: eq(players.ign, input.ign),
-      });
-      if (existing && existing.id !== id) {
-        throw new TRPCError({
-          code: "CONFLICT",
-          message: "A player with this IGN already exists.",
-        });
-      }
       if (id) {
         await db.update(players).set(data).where(eq(players.id, id));
         return { id };

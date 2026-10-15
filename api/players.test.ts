@@ -2,7 +2,7 @@ import { describe, expect, it, beforeEach, afterEach } from "vitest";
 import { appRouter } from "./router";
 import type { TrpcContext } from "./context";
 import { getDb } from "./queries/connection";
-import { players, teams } from "../db/schema";
+import { players, teams, teamStaff } from "../db/schema";
 import { eq } from "drizzle-orm";
 
 function adminCtx(): TrpcContext {
@@ -137,20 +137,6 @@ describe("admin.deletePlayer — targets single record only", () => {
     expect(other.at(0)?.status).toBe("active");
     expect(other.at(0)?.teamId).toBe(testTeamId);
   });
-
-  it("deleted player no longer appears in listPlayers after deletion", async () => {
-    const admin = appRouter.createCaller(adminCtx()).admin;
-
-    await admin.deletePlayer({ id: testPlayerId });
-
-    const listResult = await admin.listPlayers();
-
-    // The deleted player should NOT appear in the list
-    expect(listResult.find((p) => p.id === testPlayerId)).toBeUndefined();
-
-    // The kept player MUST still appear
-    expect(listResult.find((p) => p.id === otherPlayerId)).toBeDefined();
-  });
 });
 
 describe("admin.deletePlayer — unauthorized access is rejected", () => {
@@ -169,5 +155,217 @@ describe("admin.deletePlayer — unauthorized access is rejected", () => {
     await expect(caller.deletePlayer({ id: 1 })).rejects.toMatchObject({
       code: "UNAUTHORIZED",
     });
+  });
+});
+
+describe("admin.upsertPlayer — IGN handling for active and former players", () => {
+  const ts = Date.now();
+  let testTeamId: number;
+  let novaPlayerId: number;
+  let secondPlayerId: number | undefined;
+  let thirdPlayerId: number | undefined;
+
+  beforeEach(async () => {
+    const db = getDb();
+    const [team] = await db
+      .insert(teams)
+      .values({
+        name: `TestTeam_Nova_${ts}`,
+        slug: `testteam_nova_${ts}`,
+        category: "Esports Team",
+        accent: "blue",
+        displayOrder: 999,
+      })
+      .$returningId();
+    testTeamId = team.id;
+
+    const [novaPlayer] = await db
+      .insert(players)
+      .values({
+        teamId: testTeamId,
+        ign: `TSG NOVA ${ts}`,
+        slug: `tsg-nova-${ts}-${Math.random().toString(36).slice(2, 7)}`,
+        role: "Carry",
+        status: "active",
+        displayOrder: 0,
+      })
+      .$returningId();
+    novaPlayerId = novaPlayer.id;
+  });
+
+  afterEach(async () => {
+    const db = getDb();
+    if (secondPlayerId) {
+      await db.delete(players).where(eq(players.id, secondPlayerId));
+    }
+    if (thirdPlayerId) {
+      await db.delete(players).where(eq(players.id, thirdPlayerId));
+    }
+    if (novaPlayerId) {
+      await db.delete(players).where(eq(players.id, novaPlayerId));
+    }
+    if (testTeamId) {
+      await db.delete(teams).where(eq(teams.id, testTeamId));
+    }
+  });
+
+  it("allows creating a second active player with the same IGN as an existing active player", async () => {
+    const caller = appRouter.createCaller(adminCtx()).admin;
+
+    const res = await caller.upsertPlayer({
+      teamId: testTeamId,
+      ign: `TSG NOVA ${ts}`,
+      status: "active",
+      displayOrder: 0,
+    });
+    secondPlayerId = res.id;
+    expect(res.id).toBeDefined();
+    expect(res.id).not.toBe(novaPlayerId);
+  });
+
+  it("allows re-adding an IGN from a former (soft-deleted) player", async () => {
+    const caller = appRouter.createCaller(adminCtx()).admin;
+
+    const db = getDb();
+    const formerId = novaPlayerId;
+    await db
+      .update(players)
+      .set({ status: "former", teamId: null, userId: null })
+      .where(eq(players.id, formerId));
+
+    const res = await caller.upsertPlayer({
+      teamId: testTeamId,
+      ign: `TSG NOVA ${ts}`,
+      status: "active",
+      displayOrder: 0,
+    });
+    secondPlayerId = res.id;
+    expect(res.id).toBeDefined();
+    expect(res.id).not.toBe(formerId);
+
+    const [oldPlayer] = await db.select().from(players).where(eq(players.id, formerId));
+    expect(oldPlayer.status).toBe("former");
+    expect(oldPlayer.id).toBe(formerId);
+
+    const [newPlayer] = await db.select().from(players).where(eq(players.id, res.id));
+    expect(newPlayer.ign).toBe(`TSG NOVA ${ts}`);
+    expect(newPlayer.status).toBe("active");
+    expect(newPlayer.id).not.toBe(formerId);
+  });
+
+  it("allows two former players to share the same IGN", async () => {
+    const caller = appRouter.createCaller(adminCtx()).admin;
+
+    const db = getDb();
+    await db
+      .update(players)
+      .set({ status: "former", teamId: null, userId: null })
+      .where(eq(players.id, novaPlayerId));
+
+    const res = await caller.upsertPlayer({
+      teamId: testTeamId,
+      ign: `TSG NOVA ${ts}`,
+      status: "active",
+      displayOrder: 0,
+    });
+    secondPlayerId = res.id;
+    expect(res.id).toBeDefined();
+
+    await db
+      .update(players)
+      .set({ status: "former", teamId: null, userId: null })
+      .where(eq(players.id, res.id));
+
+    const res2 = await caller.upsertPlayer({
+      teamId: testTeamId,
+      ign: `TSG NOVA ${ts}`,
+      status: "active",
+      displayOrder: 0,
+    });
+    thirdPlayerId = res2.id;
+    expect(res2.id).toBeDefined();
+    expect(res2.id).not.toBe(res.id);
+    expect(res2.id).not.toBe(novaPlayerId);
+  });
+
+  it("preserves the old (former) player record's identity and other fields", async () => {
+    const caller = appRouter.createCaller(adminCtx()).admin;
+
+    const db = getDb();
+    const originalSlug = (await db.select({ slug: players.slug }).from(players).where(eq(players.id, novaPlayerId)))[0].slug;
+
+    await db
+      .update(players)
+      .set({ status: "former", teamId: null, userId: null })
+      .where(eq(players.id, novaPlayerId));
+
+    const res = await caller.upsertPlayer({
+      teamId: testTeamId,
+      ign: `TSG NOVA ${ts}`,
+      status: "active",
+      displayOrder: 0,
+    });
+    secondPlayerId = res.id;
+
+    const [former] = await db.select().from(players).where(eq(players.id, novaPlayerId));
+    expect(former.status).toBe("former");
+    expect(former.slug).toBe(originalSlug);
+    expect(former.id).toBe(novaPlayerId);
+    expect(res.id).not.toBe(novaPlayerId);
+  });
+});
+
+describe("admin.upsertStaff — allows duplicate staff names", () => {
+  const ts = Date.now();
+  let testTeamId: number;
+  let staffId: number | undefined;
+
+  beforeEach(async () => {
+    const db = getDb();
+    const [team] = await db
+      .insert(teams)
+      .values({
+        name: `TestTeam_Staff_${ts}`,
+        slug: `testteam_staff_${ts}`,
+        category: "Esports Team",
+        accent: "blue",
+        displayOrder: 999,
+      })
+      .$returningId();
+    testTeamId = team.id;
+  });
+
+  afterEach(async () => {
+    const db = getDb();
+    if (staffId) {
+      await db.delete(teamStaff).where(eq(teamStaff.id, staffId));
+    }
+    if (testTeamId) {
+      await db.delete(teams).where(eq(teams.id, testTeamId));
+    }
+  });
+
+  it("allows creating two staff members with the same name", async () => {
+    const caller = appRouter.createCaller(adminCtx()).admin;
+
+    const res1 = await caller.upsertStaff({
+      teamId: testTeamId,
+      name: "Same Name",
+      role: "Coach",
+      status: "active",
+      displayOrder: 0,
+    });
+    staffId = res1.id;
+    expect(res1.id).toBeDefined();
+
+    const res2 = await caller.upsertStaff({
+      teamId: testTeamId,
+      name: "Same Name",
+      role: "Analyst",
+      status: "active",
+      displayOrder: 1,
+    });
+    expect(res2.id).toBeDefined();
+    expect(res2.id).not.toBe(res1.id);
   });
 });
