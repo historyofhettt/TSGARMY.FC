@@ -36,9 +36,10 @@ const emptyForm = {
 export default function PlayersAdmin() {
   const utils = trpc.useUtils();
   const [teamFilter, setTeamFilter] = useState<number | "all">("all");
+  const [showFormer, setShowFormer] = useState(false);
   const { data: teamList } = trpc.admin.listTeams.useQuery();
   const { data: playersList, isLoading } = trpc.admin.listPlayers.useQuery(
-    teamFilter === "all" ? undefined : { teamId: teamFilter },
+    teamFilter === "all" ? { showFormer } : { teamId: teamFilter, showFormer },
   );
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Player | null>(null);
@@ -140,9 +141,20 @@ export default function PlayersAdmin() {
             </button>
           ))}
         </div>
-        <Button onClick={openCreate} className="gap-2 bg-[hsl(var(--tsg-blue))] hover:bg-[hsl(var(--tsg-blue)/0.85)]">
-          <Plus className="h-4 w-4" /> Add Player
-        </Button>
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={showFormer}
+              onChange={(e) => setShowFormer(e.target.checked)}
+              className="h-4 w-4 rounded border-border"
+            />
+            <span className="text-muted-foreground">Show former players</span>
+          </label>
+          <Button onClick={openCreate} className="gap-2 bg-[hsl(var(--tsg-blue))] hover:bg-[hsl(var(--tsg-blue)/0.85)]">
+            <Plus className="h-4 w-4" /> Add Player
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -194,7 +206,7 @@ export default function PlayersAdmin() {
                           </Button>
                         }
                         title={`Delete ${p.ign}?`}
-                        description="Their match performance history will also be removed."
+                        description="This soft-deletes the player (status set to 'former'). Match history and records are preserved."
                         onConfirm={() => del.mutate({ id: p.id })}
                       />
                     </div>
