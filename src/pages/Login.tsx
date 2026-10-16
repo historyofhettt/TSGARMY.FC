@@ -2,12 +2,12 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { toast } from "sonner";
-import { Loader2, Mail, Lock, User, ArrowRight, ChevronLeft, AlertCircle } from "lucide-react";
+import { Loader2, Mail, Lock, User } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
-type View = "login" | "register" | "register-username" | "forgot" | "otp" | "reset" | "success";
+type View = "login" | "register" | "register-username";
 
 interface OAuthStatePayload {
   redirect?: string;
@@ -71,30 +71,6 @@ export default function Login() {
     onError: (e) => toast.error(e.message ?? "Registration failed"),
   });
 
-  const forgotMutation = trpc.auth.forgotPassword.useMutation({
-    onSuccess: () => {
-      setView("otp");
-      toast.success("If an account exists, an OTP has been sent.");
-    },
-    onError: (e) => toast.error(e.message ?? "Failed to send OTP"),
-  });
-
-  const verifyOtpMutation = trpc.auth.verifyOtp.useMutation({
-    onSuccess: () => {
-      setView("reset");
-      toast.success("OTP verified");
-    },
-    onError: (e) => toast.error(e.message ?? "Invalid OTP"),
-  });
-
-  const resetMutation = trpc.auth.resetPassword.useMutation({
-    onSuccess: () => {
-      setView("success");
-      toast.success("Password reset successful");
-    },
-    onError: (e) => toast.error(e.message ?? "Failed to reset password"),
-  });
-
   const checkUsernameQuery = trpc.auth.checkUsername.useQuery(
     { username: oauthUsername },
     { enabled: oauthUsername.length > 0 },
@@ -141,20 +117,12 @@ export default function Login() {
             <h1 className="font-display text-2xl font-black tracking-wider text-white sm:text-3xl">
               {view === "login" && "WELCOME BACK"}
               {view === "register" && "JOIN TSG"}
-              {view === "forgot" && "RESET PASSWORD"}
-              {view === "otp" && "VERIFY OTP"}
-              {view === "reset" && "NEW PASSWORD"}
               {view === "register-username" && "Choose a Username"}
-              {view === "success" && "SUCCESS"}
             </h1>
             <p className="mt-1 text-xs text-muted-foreground">
               {view === "login" && "Sign in to your account"}
               {view === "register" && "Create your local account"}
-              {view === "forgot" && "Enter your registered email"}
-              {view === "otp" && "Check your email for the 6-digit code"}
-              {view === "reset" && "New password"}
               {view === "register-username" && "Choose a unique username"}
-              {view === "success" && "Your password has been updated"}
             </p>
           </div>
 
@@ -162,7 +130,6 @@ export default function Login() {
             {view === "login" && (
               <LoginForm
                 onLogin={(vals) => loginMutation.mutate(vals)}
-                onForgot={() => setView("forgot")}
                 onRegister={() => setView("register")}
                 onGoogle={() => handleOAuth()}
                 loading={loginMutation.isPending}
@@ -187,34 +154,6 @@ export default function Login() {
                 usernameError={checkUsernameQuery.data && !checkUsernameQuery.data.available ? "Username already exists" : undefined}
               />
             )}
-
-            {view === "forgot" && (
-              <ForgotForm
-                onForgot={(vals) => forgotMutation.mutate(vals)}
-                onBack={() => setView("login")}
-                loading={forgotMutation.isPending}
-              />
-            )}
-
-            {view === "otp" && (
-              <OtpForm
-                onVerify={(vals) => verifyOtpMutation.mutate(vals)}
-                onBack={() => setView("forgot")}
-                loading={verifyOtpMutation.isPending}
-              />
-            )}
-
-            {view === "reset" && (
-              <ResetForm
-                onReset={(vals) => resetMutation.mutate(vals)}
-                onBack={() => setView("otp")}
-                loading={resetMutation.isPending}
-              />
-            )}
-
-            {view === "success" && (
-              <SuccessView onLogin={() => setView("login")} />
-            )}
           </div>
         </div>
       </div>
@@ -224,13 +163,11 @@ export default function Login() {
 
 function LoginForm({
   onLogin,
-  onForgot,
   onRegister,
   onGoogle,
   loading,
 }: {
   onLogin: (vals: { identifier: string; password: string }) => void;
-  onForgot: () => void;
   onRegister: () => void;
   onGoogle: () => void;
   loading: boolean;
@@ -279,9 +216,6 @@ function LoginForm({
           <input type="checkbox" className="h-4 w-4 rounded border-border accent-[hsl(var(--tsg-blue))]" />
           Remember me
         </label>
-        <button type="button" onClick={onForgot} className="text-sm text-[hsl(var(--tsg-blue))] hover:underline">
-          Forgot Password?
-        </button>
       </div>
       <Button type="submit" className="h-11 w-full" disabled={loading}>
         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -430,7 +364,6 @@ function OAuthUsernameForm({
         </div>
         {usernameError && (
           <p className="flex items-center gap-1 text-xs text-[hsl(var(--tsg-red))]">
-            <AlertCircle className="h-3 w-3" />
             {usernameError}
           </p>
         )}
@@ -445,152 +378,8 @@ function OAuthUsernameForm({
         onClick={onBack}
         className="flex w-full items-center justify-center gap-1 text-sm text-muted-foreground hover:text-white"
       >
-        <ChevronLeft className="h-4 w-4" /> Back to Register
+        Back to Register
       </button>
     </form>
-  );
-}
-
-function ForgotForm({
-  onForgot,
-  onBack,
-  loading,
-}: {
-  onForgot: (vals: { email: string }) => void;
-  onBack: () => void;
-  loading: boolean;
-}) {
-  const [email, setEmail] = useState("");
-
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onForgot({ email });
-  };
-
-  return (
-    <form onSubmit={submit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
-        <div className="relative">
-          <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input id="email" type="email" className="h-11 pl-9" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        </div>
-      </div>
-      <Button type="submit" className="h-11 w-full" disabled={loading}>
-        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        Send OTP
-      </Button>
-      <button type="button" onClick={onBack} className="flex w-full items-center justify-center gap-1 text-sm text-muted-foreground hover:text-white">
-        <ChevronLeft className="h-4 w-4" /> Back to Login
-      </button>
-    </form>
-  );
-}
-
-function OtpForm({
-  onVerify,
-  onBack,
-  loading,
-}: {
-  onVerify: (vals: { email: string; otp: string }) => void;
-  onBack: () => void;
-  loading: boolean;
-}) {
-  const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState("");
-
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onVerify({ email, otp });
-  };
-
-  return (
-    <form onSubmit={submit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
-        <Input id="email" type="email" className="h-11" value={email} onChange={(e) => setEmail(e.target.value)} required />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="otp">OTP Code</Label>
-        <Input id="otp" type="text" inputMode="numeric" maxLength={6} className="h-11 text-center text-2xl tracking-[0.5em]" placeholder="000000" value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))} required />
-      </div>
-      <Button type="submit" className="h-11 w-full" disabled={loading}>
-        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        Verify OTP
-      </Button>
-      <button type="button" onClick={onBack} className="flex w-full items-center justify-center gap-1 text-sm text-muted-foreground hover:text-white">
-        <ChevronLeft className="h-4 w-4" /> Back
-      </button>
-    </form>
-  );
-}
-
-function ResetForm({
-  onReset,
-  onBack,
-  loading,
-}: {
-  onReset: (vals: { email: string; otp: string; newPassword: string; confirmPassword: string }) => void;
-  onBack: () => void;
-  loading: boolean;
-}) {
-  const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onReset({ email, otp, newPassword, confirmPassword });
-  };
-
-  return (
-    <form onSubmit={submit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
-        <Input id="email" type="email" className="h-11" value={email} onChange={(e) => setEmail(e.target.value)} required />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="otp">OTP Code</Label>
-        <Input id="otp" type="text" inputMode="numeric" maxLength={6} className="h-11 text-center text-2xl tracking-[0.5em]" placeholder="000000" value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))} required />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="newPassword">New Password</Label>
-        <div className="relative">
-          <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input id="newPassword" type="password" className="h-11 pl-9" placeholder="Min. 6 characters" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
-        </div>
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="confirmPassword">Confirm New Password</Label>
-        <div className="relative">
-          <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input id="confirmPassword" type="password" className="h-11 pl-9" placeholder="Repeat password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
-        </div>
-      </div>
-      <Button type="submit" className="h-11 w-full" disabled={loading}>
-        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        Change Password
-      </Button>
-      <button type="button" onClick={onBack} className="flex w-full items-center justify-center gap-1 text-sm text-muted-foreground hover:text-white">
-        <ChevronLeft className="h-4 w-4" /> Back
-      </button>
-    </form>
-  );
-}
-
-function SuccessView({ onLogin }: { onLogin: () => void }) {
-  return (
-    <div className="flex flex-col items-center gap-4 py-6">
-      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-500/20">
-        <svg className="h-8 w-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-        </svg>
-      </div>
-      <p className="text-center text-sm text-muted-foreground">Your password has been updated successfully.</p>
-      <Button className="h-11 w-full" onClick={onLogin}>
-        Return to Login <ArrowRight className="ml-2 h-4 w-4" />
-      </Button>
-    </div>
   );
 }
