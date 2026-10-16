@@ -7,7 +7,7 @@ import { signSessionToken } from "../session";
 import { upsertUser, findUserByProvider } from "../queries/users";
 
 const DISCORD_API_BASE = "https://discord.com/api/v10";
-const MAX_RETRIES = 1;
+const MAX_RETRIES = 2;
 const INITIAL_BACKOFF_MS = 1000;
 
 async function sleep(ms: number): Promise<void> {
@@ -18,31 +18,59 @@ interface DiscordFetchOptions extends RequestInit {
   retryOn429?: boolean;
 }
 
+function parseRetryAfter(headerValue: string | null): number | undefined {
+  if (!headerValue) return undefined;
+  const parsed = Number.parseFloat(headerValue);
+  if (!Number.isNaN(parsed) && parsed >= 0) {
+    return parsed * 1000;
+  }
+  const dateMs = Date.parse(headerValue);
+  if (!Number.isNaN(dateMs)) {
+    return Math.max(0, dateMs - Date.now());
+  }
+  return undefined;
+}
+
+function endpointLabel(url: string): string {
+  return url.replace(/^https:\/\/discord\.com\//, "");
+}
+
 async function discordFetch(url: string, opts: DiscordFetchOptions = {}): Promise<Response> {
   const { retryOn429 = true, ...init } = opts;
   let attempt = 0;
   while (true) {
     const resp = await fetch(url, init);
     if (resp.status !== 429 || !retryOn429 || attempt >= MAX_RETRIES) {
+      console.info("[Discord OAuth] API request completed", {
+        endpoint: endpointLabel(url),
+        status: resp.status,
+      });
       return resp;
     }
-      const retryAfterHeader = resp.headers.get("Retry-After");
-      let retryAfterSecs: number | undefined;
+    const retryAfterHeader = resp.headers.get("Retry-After");
+    let retryAfterMs: number | undefined;
+    try {
+      const bodyText = await resp.text();
       try {
-        const bodyText = await resp.text();
-        try {
-          const bodyJson = JSON.parse(bodyText);
-          if (typeof bodyJson.retry_after === "number") {
-            retryAfterSecs = bodyJson.retry_after * 1000;
-          }
-        } catch {
-          void 0;
+        const bodyJson = JSON.parse(bodyText);
+        if (typeof bodyJson.retry_after === "number") {
+          retryAfterMs = bodyJson.retry_after * 1000;
         }
       } catch {
         void 0;
       }
-    const waitMs = retryAfterSecs ?? INITIAL_BACKOFF_MS * Math.pow(2, attempt);
-    console.warn(`[Discord OAuth] Rate-limited (429) on attempt ${attempt + 1}/${MAX_RETRIES}. Retrying after ${Math.round(waitMs)}ms.`, { url: url.replace(/https:\/\/discord\.com\//, ""), retryAfterHeader });
+    } catch {
+      void 0;
+    }
+    if (retryAfterMs === undefined) {
+      retryAfterMs = parseRetryAfter(retryAfterHeader);
+    }
+    const waitMs = retryAfterMs ?? INITIAL_BACKOFF_MS * Math.pow(2, attempt);
+    console.warn(`[Discord OAuth] Rate-limited (429) on attempt ${attempt + 1}/${MAX_RETRIES}. Retrying after ${Math.round(waitMs)}ms.`, {
+      endpoint: endpointLabel(url),
+      retryAfterHeader: retryAfterHeader ?? undefined,
+      bodyRetryAfter: retryAfterMs !== undefined ? retryAfterMs : undefined,
+    });
     await sleep(waitMs);
     attempt++;
   }
@@ -199,6 +227,12 @@ export function createDiscordCallbackHandler() {
   return async (c: Context) => {
     const code = c.req.query("code");
     const error = c.req.query("error");
+
+    console.info("[Discord OAuth] Callback triggered", {
+      hasCode: !!code,
+      hasError: !!error,
+      error: error ? error.substring(0, 50) : null,
+    });
 
     if (error) {
       console.warn("[Discord OAuth] Redirected with error parameter:", { error: error.substring(0, 100) });
