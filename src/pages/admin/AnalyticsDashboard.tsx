@@ -222,7 +222,7 @@ function fillDateRange(
 
 export default function AnalyticsDashboard() {
   const [days, setDays] = useState(30);
-  const { data: analytics, isLoading } = trpc.admin.analytics.useQuery({ days });
+  const { data: analytics, isLoading, isError, error } = trpc.admin.analytics.useQuery({ days });
 
   const t = (analytics?.totals ?? {}) as Record<string, number>;
 
@@ -264,6 +264,13 @@ export default function AnalyticsDashboard() {
               </Card>
             ))}
           </div>
+        </div>
+      ) : isError ? (
+        <div className="flex flex-col items-center gap-4 py-12 text-center">
+          <p className="text-destructive">Failed to load analytics data.</p>
+          <p className="text-sm text-muted-foreground">
+            {error instanceof Error ? error.message : "An unexpected error occurred."}
+          </p>
         </div>
       ) : (
         <div className="space-y-8">
