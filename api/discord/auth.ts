@@ -9,6 +9,7 @@ import { upsertUser, findUserByProvider } from "../queries/users";
 const DISCORD_API_BASE = "https://discord.com/api/v10";
 const MAX_RETRIES = 2;
 const INITIAL_BACKOFF_MS = 1000;
+const FETCH_TIMEOUT_MS = 10000;
 
 async function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -39,7 +40,19 @@ async function discordFetch(url: string, opts: DiscordFetchOptions = {}): Promis
   const { retryOn429 = true, ...init } = opts;
   let attempt = 0;
   while (true) {
-    const resp = await fetch(url, init);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    const signal = controller.signal;
+    let resp: Response;
+    try {
+      console.info("[Discord OAuth] Sending API request", {
+        endpoint: endpointLabel(url),
+        method: init.method || "GET",
+      });
+      resp = await fetch(url, { ...init, signal });
+    } finally {
+      clearTimeout(timeoutId);
+    }
     if (resp.status !== 429 || !retryOn429 || attempt >= MAX_RETRIES) {
       console.info("[Discord OAuth] API request completed", {
         endpoint: endpointLabel(url),
@@ -255,8 +268,12 @@ export function createDiscordCallbackHandler() {
       }
       const redirectUriUsed = env.discordRedirectUri;
       console.info("[Discord OAuth] Using redirect_uri for token exchange", { redirectUri: redirectUriUsed });
+      console.info("[Discord OAuth] Exchange token started");
       const tokenResp = await exchangeCodeForTokens(code, redirectUriUsed);
+      console.info("[Discord OAuth] Token exchange succeeded");
+      console.info("[Discord OAuth] Fetch profile started");
       const profile = await fetchDiscordProfile(tokenResp.access_token);
+      console.info("[Discord OAuth] Profile fetch succeeded", { providerId: profile.id });
       if (!profile) {
         throw new Error("Failed to fetch Discord profile");
       }
@@ -320,10 +337,18 @@ export function createDiscordCallbackHandler() {
       const headers = new Headers(c.res.headers);
       headers.set("Location", "/");
       const response = new Response(null, { status: 302, headers });
+      console.info("[Discord OAuth] Session created, redirecting to /", { userId: user.id });
       return response;
     } catch (error) {
-      console.error("[Discord OAuth] Callback failed", error);
+      const isAbort = error instanceof DOMException && error.name === "AbortError";
+      console.error("[Discord OAuth] Callback failed", error instanceof Error ? error.message : String(error), {
+        isAbort,
+        errorType: error instanceof Error ? error.constructor.name : typeof error,
+      });
       const msg = error instanceof Error ? error.message : String(error);
+      if (isAbort || msg.includes("timeout") || msg.includes("aborted")) {
+        return c.redirect("/?oauth_error=timeout", 302);
+      }
       if (msg.includes("rate limit")) {
         return c.redirect("/?oauth_error=rate_limited", 302);
       }
