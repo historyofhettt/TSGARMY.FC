@@ -86,12 +86,33 @@
        "tag": "0038_card_milestones",
        "breakpoints": false
      },
-     {
-       "idx": 38,
-       "version": "5",
-       "when": 1791880000000,
-       "tag": "0039_card_milestones_safety",
-       "breakpoints": false
-     }
-   ]
- }
+      {
+        "idx": 38,
+        "version": "5",
+        "when": 1791880000000,
+        "tag": "0039_card_milestones_safety",
+        "breakpoints": false
+      },
+      {
+        "idx": 39,
+        "version": "5",
+        "when": 1791882000000,
+        "tag": "0040_player_ign_partial_unique",
+        "breakpoints": false
+      },
+      {
+        "idx": 40,
+        "version": "5",
+        "when": 1791884000000,
+        "tag": "0041_remove_ign_uniqueness",
+        "breakpoints": false
+      },
+      {
+        "idx": 41,
+        "version": "5",
+        "when": 1791886000000,
+        "tag": "0042_card_milestone_updatedAt",
+        "breakpoints": false
+      }
+    ]
+  }
