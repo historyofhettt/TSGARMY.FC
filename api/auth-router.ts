@@ -7,50 +7,9 @@ import { createRouter, publicQuery, authedQuery } from "./middleware";
 import { signSessionToken } from "./session";
 import { getDb } from "./queries/connection";
 import * as schema from "@db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { hashPassword, comparePassword } from "./lib/password";
-import {
-  generateOtp,
-  hashOtp,
-  verifyOtp,
-} from "./lib/otp";
-import { sendOtpEmail } from "./lib/email";
 import { findLocalUserByIdentifier, updatePassword, findUserByEmail, usernameExists } from "./queries/users";
-
-const OTP_EXPIRY_MS = 10 * 60 * 1000;
-
-const rateLimitMap = new Map<string, number[]>();
-const RATE_LIMIT_MAX = 3;
-const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
-const RATE_LIMIT_CLEANUP_MS = 60 * 1000;
-
-let rateLimitCleanupTimer: ReturnType<typeof setInterval> | null = null;
-if (rateLimitCleanupTimer === null) {
-  rateLimitCleanupTimer = setInterval(() => {
-    const now = Date.now();
-    for (const [key, attempts] of rateLimitMap.entries()) {
-      const valid = attempts.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
-      if (valid.length === 0) {
-        rateLimitMap.delete(key);
-      } else {
-        rateLimitMap.set(key, valid);
-      }
-    }
-  }, RATE_LIMIT_CLEANUP_MS);
-  rateLimitCleanupTimer.unref?.();
-}
-
-function checkRateLimit(key: string): boolean {
-  const now = Date.now();
-  const attempts = rateLimitMap.get(key) ?? [];
-  const valid = attempts.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
-  if (valid.length >= RATE_LIMIT_MAX) {
-    return false;
-  }
-  valid.push(now);
-  rateLimitMap.set(key, valid);
-  return true;
-}
 
 function setSessionCookie(ctx: { req: Request; resHeaders: Headers }, token: string) {
   const opts = getSessionCookieOptions(ctx.req.headers);
@@ -161,8 +120,15 @@ export const authRouter = createRouter({
             avatar: fullUser.avatar,
           },
         };
-      } catch (err: any) {
-        if (err?.code === "ER_DUP_ENTRY" || /duplicate/i.test(err?.message ?? "")) {
+      } catch (err: unknown) {
+        if (err && typeof err === "object" && "code" in err && (err as { code: unknown }).code === "ER_DUP_ENTRY") {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Username already exists",
+          });
+        }
+        const msg = err instanceof Error ? err.message : String(err);
+        if (/duplicate/i.test(msg)) {
           throw new TRPCError({
             code: "CONFLICT",
             message: "Username already exists",
@@ -219,165 +185,6 @@ export const authRouter = createRouter({
           avatar: user.avatar,
         },
       };
-    }),
-
-  forgotPassword: publicQuery
-    .input(z.object({ email: z.string().email() }))
-    .mutation(async ({ input }) => {
-      const rateLimitKey = `forgot:${input.email}`;
-      if (!checkRateLimit(rateLimitKey)) {
-        throw new TRPCError({
-          code: "TOO_MANY_REQUESTS",
-          message: "Too many attempts. Please try again later.",
-        });
-      }
-
-      const user = await findUserByEmail(input.email);
-      if (!user || user.provider !== "local") {
-        return { success: true, message: "If an account exists, an OTP has been sent." };
-      }
-
-      const otp = generateOtp();
-      const otpHash = await hashOtp(otp);
-      const expiresAt = new Date(Date.now() + OTP_EXPIRY_MS);
-
-      await getDb()
-        .insert(schema.passwordResets)
-        .values({
-          email: input.email,
-          token: otpHash,
-          expiresAt,
-          used: false,
-        });
-
-      try {
-        await sendOtpEmail(input.email, otp);
-      } catch (emailError: unknown) {
-        const msg = emailError instanceof Error ? emailError.message : String(emailError);
-        console.error("[auth] forgotPassword: failed to send OTP email", {
-          email: input.email,
-          error: msg.substring(0, 200),
-        });
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to send verification email. Please try again.",
-        });
-      }
-
-      return { success: true, message: "If an account exists, an OTP has been sent." };
-    }),
-
-  verifyOtp: publicQuery
-    .input(
-      z.object({
-        email: z.string().email(),
-        otp: z.string().length(6),
-      }),
-    )
-    .mutation(async ({ input }) => {
-      if (!checkRateLimit(`otp:${input.email}`)) {
-        throw new TRPCError({
-          code: "TOO_MANY_REQUESTS",
-          message: "Too many verification attempts. Please try again later.",
-        });
-      }
-
-      const user = await findUserByEmail(input.email);
-      if (!user || user.provider !== "local") {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid OTP" });
-      }
-
-      const resetRecord = await getDb()
-        .select()
-        .from(schema.passwordResets)
-        .where(
-          and(
-            eq(schema.passwordResets.email, input.email),
-            eq(schema.passwordResets.used, false),
-            sql`${schema.passwordResets.expiresAt} > ${new Date()}`,
-          ),
-        )
-        .orderBy(sql`${schema.passwordResets.createdAt} DESC`)
-        .limit(1);
-
-      if (!resetRecord.length) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid or expired OTP" });
-      }
-
-      const valid = await verifyOtp(input.otp, resetRecord[0].token);
-      if (!valid) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid OTP" });
-      }
-
-      await getDb()
-        .update(schema.passwordResets)
-        .set({ used: true })
-        .where(eq(schema.passwordResets.id, resetRecord[0].id));
-
-      return { success: true };
-    }),
-
-  resetPassword: publicQuery
-    .input(
-      z.object({
-        email: z.string().email(),
-        otp: z.string().length(6),
-        newPassword: z.string().min(6),
-        confirmPassword: z.string(),
-      }),
-    )
-    .mutation(async ({ input }) => {
-      if (!checkRateLimit(`reset:${input.email}`)) {
-        throw new TRPCError({
-          code: "TOO_MANY_REQUESTS",
-          message: "Too many attempts. Please try again later.",
-        });
-      }
-
-      if (input.newPassword !== input.confirmPassword) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Passwords do not match",
-        });
-      }
-
-      const user = await findUserByEmail(input.email);
-      if (!user || user.provider !== "local") {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid OTP" });
-      }
-
-      const resetRecord = await getDb()
-        .select()
-        .from(schema.passwordResets)
-        .where(
-          and(
-            eq(schema.passwordResets.email, input.email),
-            eq(schema.passwordResets.used, false),
-            sql`${schema.passwordResets.expiresAt} > ${new Date()}`,
-          ),
-        )
-        .orderBy(sql`${schema.passwordResets.createdAt} DESC`)
-        .limit(1);
-
-      if (!resetRecord.length) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid or expired OTP" });
-      }
-
-      const valid = await verifyOtp(input.otp, resetRecord[0].token);
-      if (!valid) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid OTP" });
-      }
-
-      const passwordHash = await hashPassword(input.newPassword);
-
-      await updatePassword(user.id, passwordHash);
-
-      await getDb()
-        .update(schema.passwordResets)
-        .set({ used: true })
-        .where(eq(schema.passwordResets.id, resetRecord[0].id));
-
-      return { success: true };
     }),
 
   changePassword: authedQuery
