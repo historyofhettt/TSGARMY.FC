@@ -103,7 +103,7 @@ describe("OAuth redirect_uri consistency: frontend and backend use identical URL
     expect(result.status).toBe(503);
   });
 
-  it("Discord callback handler returns 503 when DISCORD_REDIRECT_URI is missing", async () => {
+  it("Discord callback redirects to login with not_configured error when DISCORD_REDIRECT_URI is missing", async () => {
     delete process.env.DISCORD_REDIRECT_URI;
     vi.resetModules();
 
@@ -124,11 +124,14 @@ describe("OAuth redirect_uri consistency: frontend and backend use identical URL
         },
       },
       json: (data: unknown, status?: number) => ({ data, status }),
-      redirect: () => ({}),
+      redirect: (url: string, status: number) => ({ url, status }),
     } as unknown as Context;
 
-    const result = await createDiscordCallbackHandler()(mockC);
-    expect(result.status).toBe(503);
+    const result = await createDiscordCallbackHandler()(mockC) as unknown as { url: string; status: number };
+    expect(result.status).toBe(302);
+    expect(result.url).toBe("/?oauth_error=not_configured");
+
+    process.env.DISCORD_REDIRECT_URI = DISCORD_CALLBACK;
   });
 
   it("redirect URIs are not localhost or proxy-internal URLs", async () => {
@@ -264,12 +267,16 @@ describe("OAuth redirect_uri consistency: frontend and backend use identical URL
     expect(capturedRedirectUri).not.toContain("8080");
   });
 
-  it("Discord callback returns 429 when Discord returns 429 on token exchange", async () => {
+  it("Discord callback redirects to login with rate_limited error when Discord returns 429 after retry", async () => {
     const { createDiscordCallbackHandler } = await import("./discord/auth");
+
+    vi.useFakeTimers({ doNotFake: ["nextTick", "setImmediate"] });
 
     const handler = createDiscordCallbackHandler();
     const validState = btoa(JSON.stringify({ nonce: "test-nonce" }));
 
+    let fetchCallCount = 0;
+    const resHeaders = new Headers();
     const mockC = {
       req: {
         query: (k: string) => {
@@ -279,38 +286,173 @@ describe("OAuth redirect_uri consistency: frontend and backend use identical URL
           return null;
         },
         url: "http://localhost:8080/api/oauth/discord/callback?code=test-auth-code",
-         raw: { headers: new Headers() },
+        raw: { headers: new Headers() },
         header: (k: string) => {
           if (k === "cookie") return `oauth_state=${validState}; oauth_nonce=test-nonce`;
           return null;
         },
       },
-      res: { headers: new Headers() },
-      json: (data: unknown, status?: number) => ({ data, status }),
-      redirect: () => ({}),
+      res: { headers: resHeaders },
+      header: (key: string, value?: string, opts?: { append?: boolean }) => {
+        if (value === undefined) return resHeaders.get(key);
+        if (opts?.append) resHeaders.append(key, value);
+        else resHeaders.set(key, value);
+      },
+      redirect: (url: string, status: number) => ({ url, status }),
     } as unknown as Context;
 
-    const originalFetch = global.fetch;
-    global.fetch = vi.fn(() =>
-      Promise.resolve({
+    global.fetch = vi.fn(() => {
+      fetchCallCount++;
+      return Promise.resolve({
         ok: false,
         status: 429,
-        headers: new Headers({ "Retry-After": "60" }),
-        text: () =>
-          Promise.resolve(
-            JSON.stringify({ message: "You are being rate limited.", retry_after: 60.0, global: false }),
-          ),
-      } as Response),
-    );
+        headers: new Headers({ "Retry-After": "1" }),
+        json: () => Promise.resolve({ message: "Rate limited", retry_after: 1, global: false }),
+      } as Response);
+    }) as unknown as typeof fetch;
 
-    const result = await handler(mockC) as unknown as { status: number; data: { error: string } };
-    expect(result.status).toBe(429);
-    expect(result.data).toHaveProperty("error");
+    const promise = handler(mockC);
+    await vi.advanceTimersByTimeAsync(2000);
+    const result = await promise as unknown as { url: string; status: number };
+    vi.useRealTimers();
 
-    global.fetch = originalFetch;
+    expect(result.status).toBe(302);
+    expect(result.url).toBe("/?oauth_error=rate_limited");
+    expect(fetchCallCount).toBe(2);
+
+    global.fetch = vi.fn() as unknown as typeof fetch;
+    vi.restoreAllMocks();
   });
 
-  it("Discord callback returns 502 when Discord returns 401 (invalid credentials), not 429", async () => {
+  it("Discord callback retries token exchange on 429 and succeeds on second attempt", async () => {
+    const mockUpsertUser = vi.fn().mockResolvedValue(undefined);
+    const mockFindUser = vi.fn().mockResolvedValue({ id: 12345 });
+    vi.resetModules();
+    vi.doMock("./queries/users", () => ({
+      upsertUser: mockUpsertUser,
+      findUserByProvider: mockFindUser,
+    }));
+
+    const { createDiscordCallbackHandler } = await import("./discord/auth");
+
+    vi.useFakeTimers({ doNotFake: ["nextTick", "setImmediate"] });
+
+    const handler = createDiscordCallbackHandler();
+    const validState = btoa(JSON.stringify({ nonce: "test-nonce", username: "newuser123" }));
+
+    const resHeaders = new Headers();
+    const mockC = {
+      req: {
+        query: (k: string) => {
+          if (k === "code") return "test-auth-code";
+          if (k === "error") return null;
+          if (k === "state") return validState;
+          return null;
+        },
+        url: "http://localhost:8080/api/oauth/discord/callback?code=test-auth-code",
+        raw: { headers: new Headers() },
+        header: (k: string) => {
+          if (k === "cookie") return `oauth_state=${validState}; oauth_nonce=test-nonce`;
+          return null;
+        },
+      },
+      res: { headers: resHeaders },
+      header: (key: string, value?: string, opts?: { append?: boolean }) => {
+        if (value === undefined) return resHeaders.get(key);
+        if (opts?.append) resHeaders.append(key, value);
+        else resHeaders.set(key, value);
+      },
+      redirect: (url: string, status: number) => ({ url, status }),
+    } as unknown as Context;
+
+    let fetchCallCount = 0;
+    global.fetch = vi.fn((input: unknown) => {
+      fetchCallCount++;
+      const url = typeof input === "string" ? input : "";
+      if (url.includes("discord.com/api/v10/oauth2/token")) {
+        if (fetchCallCount === 1) {
+          return Promise.resolve({
+            ok: false,
+            status: 429,
+            headers: new Headers({ "Retry-After": "1" }),
+            json: () => Promise.resolve({ message: "Rate limited", retry_after: 1, global: false }),
+          } as Response);
+        }
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({
+            access_token: "mock-access-token",
+            token_type: "Bearer",
+            expires_in: 604800,
+            scope: "identify email",
+          }),
+        } as Response);
+      }
+      if (url.includes("discord.com/api/v10/users/@me")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            id: "123456789",
+            username: "discorduser",
+            discriminator: "0001",
+            avatar: "abc123",
+            global_name: "Discord User",
+          }),
+        } as Response);
+      }
+      return Promise.reject(new Error("Unexpected fetch"));
+    }) as unknown as typeof fetch;
+
+    const promise = handler(mockC);
+    await vi.advanceTimersByTimeAsync(2000);
+    const result = await promise as unknown as Response;
+    vi.useRealTimers();
+
+    expect(result.status).toBe(302);
+    expect(result.headers.get("Location")).toBe("/");
+    expect(fetchCallCount).toBe(3);
+    expect(mockUpsertUser).toHaveBeenCalled();
+
+    global.fetch = vi.fn() as unknown as typeof fetch;
+    vi.restoreAllMocks();
+    vi.resetModules();
+  });
+
+  it("Discord callback redirects with not_configured when DISCORD_REDIRECT_URI missing", async () => {
+    delete process.env.DISCORD_REDIRECT_URI;
+    vi.resetModules();
+
+    const { createDiscordCallbackHandler } = await import("./discord/auth");
+
+    const handler = createDiscordCallbackHandler();
+    const validState = btoa(JSON.stringify({ nonce: "test-nonce" }));
+
+    const mockC = {
+      req: {
+        query: (k: string) => {
+          if (k === "code") return "test-auth-code";
+          if (k === "error") return null;
+          if (k === "state") return validState;
+          return null;
+        },
+        header: (k: string) => {
+          if (k === "cookie") return `oauth_state=${validState}; oauth_nonce=test-nonce`;
+          return null;
+        },
+      },
+      redirect: (url: string, status: number) => ({ url, status }),
+    } as unknown as Context;
+
+    const result = await handler(mockC) as unknown as { url: string; status: number };
+    expect(result.status).toBe(302);
+    expect(result.url).toBe("/?oauth_error=not_configured");
+
+    process.env.DISCORD_REDIRECT_URI = DISCORD_CALLBACK;
+    vi.resetModules();
+  });
+
+  it("Discord callback redirects with credentials_invalid when Discord returns 401 (invalid credentials), not 429", async () => {
     const { createDiscordCallbackHandler } = await import("./discord/auth");
 
     const handler = createDiscordCallbackHandler();
@@ -333,7 +475,7 @@ describe("OAuth redirect_uri consistency: frontend and backend use identical URL
       },
       res: { headers: new Headers() },
       json: (data: unknown, status?: number) => ({ data, status }),
-      redirect: () => ({}),
+      redirect: (url: string, status: number) => ({ url, status }),
     } as unknown as Context;
 
     const originalFetch = global.fetch;
@@ -343,11 +485,13 @@ describe("OAuth redirect_uri consistency: frontend and backend use identical URL
         status: 401,
         headers: new Headers(),
         text: () => Promise.resolve('{"error": "invalid_client"}'),
+        json: () => Promise.resolve({ error: "invalid_client" }),
       } as Response),
     );
 
-    const result = await handler(mockC);
-    expect(result.status).toBe(502);
+    const result = await handler(mockC) as unknown as { url: string; status: number };
+    expect(result.status).toBe(302);
+    expect(result.url).toBe("/?oauth_error=credentials_invalid");
     global.fetch = originalFetch;
   });
 
