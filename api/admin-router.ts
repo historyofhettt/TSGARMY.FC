@@ -1117,13 +1117,16 @@ export const adminRouter = createRouter({
 
   // ---------------------------------------------------------------- players
   listPlayers: adminQuery
-    .input(z.object({ teamId: z.number().optional() }).optional())
+    .input(z.object({ teamId: z.number().optional(), showFormer: z.boolean().optional() }).optional())
     .query(async ({ input }) => {
       const db = getDb();
+      const conditions: SQL<unknown>[] = [];
+      if (input?.teamId) conditions.push(eq(players.teamId, input.teamId));
+      if (!input?.showFormer) conditions.push(ne(players.status, "former"));
       const list = await db
         .select()
         .from(players)
-        .where(input?.teamId ? eq(players.teamId, input.teamId) : undefined)
+        .where(conditions.length ? and(...conditions) : undefined)
         .orderBy(asc(players.displayOrder));
       const teamList = await db.select().from(teams);
       const urls = await signKeys(list.map((p) => p.photoKey));
