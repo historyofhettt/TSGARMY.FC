@@ -6,6 +6,48 @@ import { Session } from "@contracts/constants";
 import { signSessionToken } from "../session";
 import { upsertUser, findUserByProvider } from "../queries/users";
 
+const DISCORD_API_BASE = "https://discord.com/api/v10";
+const MAX_RETRIES = 1;
+const INITIAL_BACKOFF_MS = 1000;
+
+async function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+interface DiscordFetchOptions extends RequestInit {
+  retryOn429?: boolean;
+}
+
+async function discordFetch(url: string, opts: DiscordFetchOptions = {}): Promise<Response> {
+  const { retryOn429 = true, ...init } = opts;
+  let attempt = 0;
+  while (true) {
+    const resp = await fetch(url, init);
+    if (resp.status !== 429 || !retryOn429 || attempt >= MAX_RETRIES) {
+      return resp;
+    }
+      const retryAfterHeader = resp.headers.get("Retry-After");
+      let retryAfterSecs: number | undefined;
+      try {
+        const bodyText = await resp.text();
+        try {
+          const bodyJson = JSON.parse(bodyText);
+          if (typeof bodyJson.retry_after === "number") {
+            retryAfterSecs = bodyJson.retry_after * 1000;
+          }
+        } catch {
+          void 0;
+        }
+      } catch {
+        void 0;
+      }
+    const waitMs = retryAfterSecs ?? INITIAL_BACKOFF_MS * Math.pow(2, attempt);
+    console.warn(`[Discord OAuth] Rate-limited (429) on attempt ${attempt + 1}/${MAX_RETRIES}. Retrying after ${Math.round(waitMs)}ms.`, { url: url.replace(/https:\/\/discord\.com\//, ""), retryAfterHeader });
+    await sleep(waitMs);
+    attempt++;
+  }
+}
+
 function getCookieValue(c: Context, key: string): string | undefined {
   const cookieHeader = c.req.header("cookie");
   if (!cookieHeader) return undefined;
@@ -72,36 +114,15 @@ async function exchangeCodeForTokens(code: string, redirectUri: string) {
     grant_type: "authorization_code",
   });
 
-  const resp = await fetch("https://discord.com/api/v10/oauth2/token", {
+  const resp = await discordFetch(`${DISCORD_API_BASE}/oauth2/token`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: params.toString(),
   });
 
   if (resp.status === 429) {
-    const retryAfterHeader = resp.headers.get("Retry-After");
-    let retryAfterSecs: string | undefined = retryAfterHeader ?? undefined;
-    let safeBody: string | undefined;
-    try {
-      const bodyText = await resp.text();
-      try {
-        const bodyJson = JSON.parse(bodyText);
-        if (typeof bodyJson.retry_after === "number") {
-          retryAfterSecs = String(bodyJson.retry_after);
-        }
-        safeBody = JSON.stringify({ message: bodyJson.message, retry_after: bodyJson.retry_after, global: bodyJson.global });
-      } catch {
-        safeBody = `[non-JSON response, ${bodyText.length} chars]`;
-      }
-    } catch {
-      // ignore body read errors
-    }
-    if (retryAfterSecs) {
-      console.warn(`[Discord OAuth] Rate-limited (429) on token exchange. Retry after ${retryAfterSecs}s.`, { retryAfterSecs, detail: safeBody });
-    } else {
-      console.warn("[Discord OAuth] Rate-limited (429) on token exchange. No retry duration provided by Discord.", { detail: safeBody });
-    }
-    throw new Error("Discord rate limit reached. Please try signing in again in a moment.");
+    console.warn("[Discord OAuth] Rate-limited (429) on token exchange after retries exhausted.", { endpoint: "discord.com/api/v10/oauth2/token" });
+    throw new Error("Discord rate limit reached. Please try signing in again in a few moments.");
   }
 
   if (!resp.ok) {
@@ -138,16 +159,13 @@ async function exchangeCodeForTokens(code: string, redirectUri: string) {
 }
 
 async function fetchDiscordProfile(accessToken: string) {
-  const resp = await fetch("https://discord.com/api/v10/users/@me", {
+  const resp = await discordFetch(`${DISCORD_API_BASE}/users/@me`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 
   if (resp.status === 429) {
-    const retryAfterHeader = resp.headers.get("Retry-After");
-    console.warn(`[Discord OAuth] Rate-limited (429) on profile fetch.${retryAfterHeader ? ` Retry after ${retryAfterHeader}s.` : ""}`, {
-      endpoint: "discord.com/api/v10/users/@me",
-    });
-    throw new Error("Discord rate limit reached. Please try signing in again in a moment.");
+    console.warn("[Discord OAuth] Rate-limited (429) on profile fetch after retries exhausted.", { endpoint: "discord.com/api/v10/users/@me" });
+    throw new Error("Discord rate limit reached. Please try signing in again in a few moments.");
   }
 
   if (!resp.ok) {
@@ -272,19 +290,19 @@ export function createDiscordCallbackHandler() {
     } catch (error) {
       console.error("[Discord OAuth] Callback failed", error);
       const msg = error instanceof Error ? error.message : String(error);
-      if (msg.includes("Discord rate limit")) {
-        return c.json({ error: "Discord rate limit reached. Please try signing in again in a few moments." }, 429);
+      if (msg.includes("rate limit")) {
+        return c.redirect("/?oauth_error=rate_limited", 302);
       }
       if (msg.includes("not configured")) {
-        return c.json({ error: "Discord OAuth is not configured on the server." }, 503);
+        return c.redirect("/?oauth_error=not_configured", 302);
       }
       if (msg.includes("authorization code")) {
-        return c.json({ error: "Discord OAuth session expired. Please sign in again." }, 400);
+        return c.redirect("/?oauth_error=code_expired", 302);
       }
       if (msg.includes("credentials invalid")) {
-        return c.json({ error: "Discord OAuth credentials are invalid. Please contact support." }, 502);
+        return c.redirect("/?oauth_error=credentials_invalid", 302);
       }
-      return c.json({ error: "Discord OAuth callback failed" }, 500);
+      return c.redirect("/?oauth_error=unknown", 302);
     }
   };
 }
