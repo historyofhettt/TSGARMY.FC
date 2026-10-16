@@ -5,7 +5,6 @@ import { appRouter } from "./router";
 import { createContext } from "./context";
 import { env } from "./lib/env";
 import { createGoogleCallbackHandler } from "./google/auth";
-import { createDiscordCallbackHandler } from "./discord/auth";
 import { createUsernameSelectHandler } from "./oauth/username";
 import { Paths } from "@contracts/constants";
 import { runNotificationScheduler } from "./queries/notifications";
@@ -52,7 +51,6 @@ app.use(async (c, next) => {
   return next();
 });
 app.get(Paths.googleCallback, createGoogleCallbackHandler());
-app.get(Paths.discordCallback, createDiscordCallbackHandler());
 app.post("/api/oauth/username", createUsernameSelectHandler());
 import { storage } from "./lib/storage";
 import { guessContentType } from "./lib/storage";
