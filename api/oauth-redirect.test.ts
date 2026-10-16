@@ -665,6 +665,49 @@ describe("OAuth redirect_uri consistency: frontend and backend use identical URL
     vi.resetModules();
   });
 
+  it("Discord callback redirects with timeout error when Discord API does not respond (AbortError)", async () => {
+    const { createDiscordCallbackHandler } = await import("./discord/auth");
+
+    const handler = createDiscordCallbackHandler();
+    const validState = btoa(JSON.stringify({ nonce: "test-nonce" }));
+
+    const resHeaders = new Headers();
+    const mockC = {
+      req: {
+        query: (k: string) => {
+          if (k === "code") return "test-auth-code";
+          if (k === "error") return null;
+          if (k === "state") return validState;
+          return null;
+        },
+        url: "http://localhost:8080/api/oauth/discord/callback?code=test-auth-code",
+        raw: { headers: new Headers() },
+        header: (k: string) => {
+          if (k === "cookie") return `oauth_state=${validState}; oauth_nonce=test-nonce`;
+          return null;
+        },
+      },
+      res: { headers: resHeaders },
+      header: (key: string, value?: string, opts?: { append?: boolean }) => {
+        if (value === undefined) return resHeaders.get(key);
+        if (opts?.append) resHeaders.append(key, value);
+        else resHeaders.set(key, value);
+      },
+      redirect: (url: string, status: number) => ({ url, status }),
+    } as unknown as Context;
+
+    global.fetch = vi.fn(() => {
+      return Promise.reject(new DOMException("The user aborted a request.", "AbortError"));
+    }) as unknown as typeof fetch;
+
+    const result = await handler(mockC) as unknown as { url: string };
+    expect(result.url).toBe("/?oauth_error=timeout");
+
+    global.fetch = vi.fn() as unknown as typeof fetch;
+    vi.restoreAllMocks();
+    vi.resetModules();
+  });
+
   it("Discord callback redirects with not_configured when DISCORD_REDIRECT_URI missing", async () => {
     delete process.env.DISCORD_REDIRECT_URI;
     vi.resetModules();
