@@ -3909,7 +3909,7 @@ export const adminRouter = createRouter({
         })
         .from(users)
         .groupBy(users.role)
-        .orderBy(desc(sql`count`));
+        .orderBy(desc(sql`count(*)`));
 
       // --- Comments & Community ---
       const [commentCount, commentByDay] = await Promise.all([
@@ -3936,12 +3936,12 @@ export const adminRouter = createRouter({
             cardCategory: cards.category,
             claimedSupply: cards.claimedSupply,
             totalSupply: cards.totalSupply,
-            holders: sql<number>`COALESCE(SUM(CASE WHEN userCards.id IS NOT NULL THEN 1 ELSE 0 END), 0)`,
+             holders: sql<number>`COALESCE(SUM(CASE WHEN ${userCards.id} IS NOT NULL THEN 1 ELSE 0 END), 0)`,
           })
           .from(cards)
           .leftJoin(userCards, eq(userCards.cardId, cards.id))
           .groupBy(cards.id)
-          .orderBy(desc(sql`holders`))
+          .orderBy(desc(sql`COALESCE(SUM(CASE WHEN ${userCards.id} IS NOT NULL THEN 1 ELSE 0 END), 0)`))
           .limit(20),
         db
           .select({
@@ -4002,14 +4002,14 @@ export const adminRouter = createRouter({
       const [tournamentCount, matchCount, tournamentsByStatus, matchesByDay] = await Promise.all([
         db.select({ count: sql<number>`count(*)` }).from(tournaments),
         db.select({ count: sql<number>`count(*)` }).from(matches),
-        db
-          .select({
-            status: tournaments.status,
-            count: sql<number>`count(*)`,
-          })
-          .from(tournaments)
-          .groupBy(tournaments.status)
-          .orderBy(desc(sql`count`)),
+          db
+            .select({
+              status: tournaments.status,
+              count: sql<number>`count(*)`,
+            })
+            .from(tournaments)
+            .groupBy(tournaments.status)
+            .orderBy(desc(sql`count(*)`)),
         db
           .select({
             date: sql<string>`DATE(createdAt)`,
