@@ -5,13 +5,12 @@ import { Save, ArrowLeft, User, LogOut, Trophy, Gem, Instagram } from "lucide-re
 import AchievementShowcase from "@/components/AchievementShowcase";
 import { PageLayout } from "@/components/PageLayout";
 import { SectionHeading } from "@/components/SectionHeading";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
-import { initials } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const USERNAME_MIN = 3;
@@ -174,12 +173,7 @@ export default function Profile() {
           <div className="px-6 pb-8 md:px-10">
             <div className="relative -mt-16 mb-4 flex items-end gap-4">
               <div className="relative">
-                <Avatar className="h-28 w-28 border-4 border-background text-4xl">
-                  <AvatarImage src={avatarUrl ?? undefined} alt={displayName} />
-                  <AvatarFallback className="font-display font-bold text-[hsl(var(--tsg-blue))]">
-                    {initials(displayName)}
-                  </AvatarFallback>
-                </Avatar>
+                <UserAvatar src={avatarUrl} name={displayName} size="xl" className="h-28 w-28 border-4 border-background text-4xl" />
                 <button
                   type="button"
                   onClick={() => fileRef.current?.click()}
