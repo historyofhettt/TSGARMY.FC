@@ -1174,16 +1174,21 @@ export const adminRouter = createRouter({
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const db = getDb();
-      const result = await db
-        .update(players)
-        .set({ status: "former", teamId: null, userId: null })
-        .where(eq(players.id, input.id));
-      if ((result[0]?.affectedRows ?? 0) === 0) {
+      const [existing] = await db.select().from(players).where(eq(players.id, input.id));
+      if (!existing) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Player not found.",
         });
       }
+      await db.delete(matchPlayers).where(eq(matchPlayers.playerId, input.id));
+      await db.delete(playerHighlights).where(eq(playerHighlights.playerId, input.id));
+      await db
+        .update(tournaments)
+        .set({ mvpPlayerId: null })
+        .where(eq(tournaments.mvpPlayerId, input.id));
+      await db.delete(liveLinks).where(eq(liveLinks.playerId, input.id));
+      await db.delete(players).where(eq(players.id, input.id));
       return { ok: true };
     }),
 
