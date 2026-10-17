@@ -36,9 +36,13 @@ export function Footer() {
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 md:grid-cols-4 md:px-8">
         <div>
           <div className="flex items-center gap-2.5">
-            <span className="flex h-10 w-10 items-center justify-center rounded-md bg-gradient-to-br from-[hsl(var(--tsg-blue))] to-[hsl(var(--tsg-red))] font-display text-sm font-black text-white">
-              TSG
-            </span>
+            {org?.footerLogoUrl ? (
+              <img src={org.footerLogoUrl} alt="TSG logo" className="h-10 w-10 shrink-0 rounded-md object-contain" loading="lazy" />
+            ) : (
+              <span className="flex h-10 w-10 items-center justify-center rounded-md bg-gradient-to-br from-[hsl(var(--tsg-blue))] to-[hsl(var(--tsg-red))] font-display text-sm font-black text-white">
+                TSG
+              </span>
+            )}
             <div>
               <p className="font-display text-sm font-bold tracking-widest">{org?.shortName ?? "TSG"}</p>
               <p className="text-xs text-muted-foreground">{org?.orgName ?? "Two Side Gamers"}</p>
