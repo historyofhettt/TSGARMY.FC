@@ -945,6 +945,7 @@ export const adminRouter = createRouter({
         tagline: z.string().max(255),
         description: z.string().nullish(),
         logoKey: z.string().max(512).nullish(),
+        footerLogoKey: z.string().max(512).nullish(),
         instagram: z.string().max(512).nullish(),
         youtube: z.string().max(512).nullish(),
         x: z.string().max(512).nullish(),

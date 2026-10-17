@@ -58,10 +58,14 @@ const VALID_REF_TABLES = ["media_album", "tournaments", "highlights", "fan_spotl
 
 export const publicRouter = createRouter({
   // ------------------------------------------------------------- organization
-  org: publicQuery.query(async () => {
+   org: publicQuery.query(async () => {
     const org = await getOrg();
-    const urls = await signKeys([org.logoKey]);
-    return { ...org, logoUrl: org.logoKey ? (urls[org.logoKey] ?? null) : null };
+    const urls = await signKeys([org.logoKey, org.footerLogoKey].filter(Boolean) as string[]);
+    return {
+      ...org,
+      logoUrl: org.logoKey ? (urls[org.logoKey] ?? null) : null,
+      footerLogoUrl: org.footerLogoKey ? (urls[org.footerLogoKey] ?? null) : null,
+    };
   }),
 
   getLiveSectionEnabledRoles: publicQuery.query(async () => {
@@ -652,9 +656,7 @@ export const publicRouter = createRouter({
     .input(z.object({ teamId: z.number().optional() }).optional())
     .query(async ({ input }) => {
       const db = getDb();
-      const where = input?.teamId
-        ? and(eq(players.teamId, input.teamId), or(eq(players.status, "active"), eq(players.status, "substitute")))
-        : or(eq(players.status, "active"), eq(players.status, "substitute"));
+      const where = input?.teamId ? eq(players.teamId, input.teamId) : undefined;
       const list = await db
         .select()
         .from(players)
