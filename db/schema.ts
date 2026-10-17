@@ -183,6 +183,7 @@ export const orgSettings = mysqlTable("org_settings", {
     .default("Built for Competition. Driven by Legacy."),
   description: text("description"),
   logoKey: varchar("logoKey", { length: 512 }),
+  footerLogoKey: varchar("footerLogoKey", { length: 512 }),
   youtube: varchar("youtube", { length: 512 }),
   instagram: varchar("instagram", { length: 512 }),
   x: varchar("x", { length: 512 }),
