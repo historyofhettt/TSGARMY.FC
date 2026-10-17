@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { timeAgo } from "@/lib/format";
+import { UserAvatar } from "@/components/UserAvatar";
 import { cn } from "@/lib/utils";
 import { hasAtLeastRole } from "@contracts/constants";
 import type { Role } from "@contracts/constants";
@@ -145,17 +146,7 @@ export function UniversalCommentSection({
   const CommentRow = ({ c, isReply }: { c: CommentItem; isReply?: boolean }) => (
     <article className={cn("glass rounded-xl p-4", isReply && "ml-8 border-l-2 border-l-[hsl(var(--tsg-blue)/0.4)] md:ml-12")}>
       <div className="flex items-center gap-2.5">
-        {c.userAvatar ? (
-          <img
-            src={c.userAvatar.startsWith("http") ? c.userAvatar : `/uploads/${c.userAvatar}`}
-            alt=""
-            className="h-8 w-8 rounded-full object-cover"
-          />
-        ) : (
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[hsl(var(--tsg-blue)/0.15)] text-xs font-bold text-[hsl(var(--tsg-blue))]">
-            {(c.userName ?? "?").slice(0, 1).toUpperCase()}
-          </span>
-        )}
+        <UserAvatar src={c.userAvatar} name={c.userName} username={c.userUsername ?? undefined} />
         <span className="text-sm font-semibold">
           {c.userUsername ? (
             <Link to={`/fans/${c.userUsername}`} className="hover:underline">
