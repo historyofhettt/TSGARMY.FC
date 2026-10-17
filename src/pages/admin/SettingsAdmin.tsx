@@ -18,6 +18,8 @@ export default function SettingsAdmin() {
     description: "",
     logoKey: null as string | null,
     logoUrl: null as string | null,
+    footerLogoKey: null as string | null,
+    footerLogoUrl: null as string | null,
     youtube: "",
     instagram: "",
     x: "",
@@ -33,6 +35,8 @@ export default function SettingsAdmin() {
         description: org.description ?? "",
         logoKey: org.logoKey,
         logoUrl: org.logoUrl,
+        footerLogoKey: org.footerLogoKey,
+        footerLogoUrl: org.footerLogoUrl,
         youtube: org.youtube ?? "",
         instagram: org.instagram ?? "",
         x: org.x ?? "",
@@ -98,6 +102,13 @@ export default function SettingsAdmin() {
               category="team-logos"
               onUploaded={(key, url) => setForm({ ...form, logoKey: key, logoUrl: url })}
             />
+            <ImageUpload
+              label="Footer Logo"
+              value={form.footerLogoKey}
+              previewUrl={form.footerLogoUrl}
+              category="team-logos"
+              onUploaded={(key, url) => setForm({ ...form, footerLogoKey: key, footerLogoUrl: url })}
+            />
           </section>
 
           <section className="glass space-y-4 rounded-xl p-6">
@@ -131,6 +142,7 @@ export default function SettingsAdmin() {
                   tagline: form.tagline,
                   description: form.description || null,
                   logoKey: form.logoKey,
+                footerLogoKey: form.footerLogoKey,
                   youtube: form.youtube || null,
                   instagram: form.instagram || null,
                   x: form.x || null,
