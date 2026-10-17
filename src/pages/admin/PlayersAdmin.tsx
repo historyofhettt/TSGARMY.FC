@@ -60,7 +60,7 @@ export default function PlayersAdmin() {
   });
   const del = trpc.admin.deletePlayer.useMutation({
     onSuccess: () => {
-      toast.success("Player deleted.");
+      toast.success("Player removed from roster.");
       refresh();
     },
     onError: (e) => toast.error(`Unable to delete player. ${e.message}`),
