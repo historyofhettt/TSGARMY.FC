@@ -3,6 +3,7 @@ import { trpc } from "@/providers/trpc";
 import { PageLayout } from "@/components/PageLayout";
 import { Link } from "react-router";
 import { cn } from "@/lib/utils";
+import { UserAvatar } from "@/components/UserAvatar";
 import { AdDisplay } from "@/components/AdDisplay";
 
 const RANK_STYLES: Record<number, string> = {
@@ -54,14 +55,8 @@ export default function Leaderboard() {
                     )}
                   </div>
                   <div className="flex flex-1 items-center gap-3 min-w-0">
-                     <Link to={`/fans/${u.username}`} className="flex items-center gap-3 min-w-0 -ml-3">
-                     {u.avatarUrl ? (
-                       <img src={u.avatarUrl} alt={u.username ?? ""} className="h-10 w-10 rounded-full object-cover" />
-                     ) : (
-                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[hsl(var(--tsg-blue)/0.15)] text-sm font-bold text-[hsl(var(--tsg-blue))]">
-                         {(u.name ?? u.username ?? "?").slice(0, 1).toUpperCase()}
-                       </div>
-                     )}
+                   <Link to={`/fans/${u.username}`} className="flex items-center gap-3 min-w-0 -ml-3">
+                      <UserAvatar src={u.avatarUrl} name={u.name} username={u.username ?? undefined} className="h-10 w-10" />
                      <div className="min-w-0 flex-1">
                        <span className="font-display font-bold block hover:underline">
                          {u.name ?? u.username}

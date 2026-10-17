@@ -4,6 +4,7 @@ import { trpc } from "@/providers/trpc";
 import { PageLayout } from "@/components/PageLayout";
 import { SectionHeading } from "@/components/SectionHeading";
 import { timeAgo } from "@/lib/format";
+import { UserAvatar } from "@/components/UserAvatar";
 import { useNavigate } from "react-router";
 import { AdDisplay } from "@/components/AdDisplay";
 
@@ -53,13 +54,7 @@ export default function Community() {
               onClick={() => navigate(`/tournaments/${c.tournamentSlug}`)}
             >
               <div className="flex items-center gap-2.5 text-sm">
-                {c.userAvatar ? (
-                  <img src={c.userAvatar.startsWith("http") ? c.userAvatar : `/uploads/${c.userAvatar}`} alt="" className="h-7 w-7 rounded-full object-cover" />
-                ) : (
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[hsl(var(--tsg-blue)/0.15)] text-xs font-bold text-[hsl(var(--tsg-blue))]">
-                    {(c.userName ?? "?").slice(0, 1).toUpperCase()}
-                  </span>
-                )}
+                <UserAvatar src={c.userAvatar} name={c.userName} className="h-7 w-7" />
                 <span className="font-semibold">
                   {c.userUsername ? (
                     <Link
