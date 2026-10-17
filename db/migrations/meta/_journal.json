@@ -113,6 +113,13 @@
         "when": 1791886000000,
         "tag": "0042_card_milestone_updatedAt",
         "breakpoints": false
+      },
+      {
+        "idx": 42,
+        "version": "5",
+        "when": 1791887000000,
+        "tag": "0043_footer_logo",
+        "breakpoints": false
       }
     ]
   }
