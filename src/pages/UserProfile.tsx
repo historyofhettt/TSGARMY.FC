@@ -2,10 +2,9 @@ import { useParams, Link } from "react-router";
 import { ArrowLeft, Trophy } from "lucide-react";
 import { PageLayout } from "@/components/PageLayout";
 import { SectionHeading } from "@/components/SectionHeading";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/providers/trpc";
-import { initials } from "@/lib/format";
 
 export default function UserProfile() {
   const { username } = useParams<{ username: string }>();
@@ -59,12 +58,7 @@ export default function UserProfile() {
 
           <div className="px-6 pb-8 md:px-10">
             <div className="relative -mt-16 mb-4 flex items-end gap-4">
-              <Avatar className="h-28 w-28 border-4 border-background text-4xl">
-                <AvatarImage src={avatarUrl ?? undefined} alt={displayName} />
-                <AvatarFallback className="font-display font-bold text-[hsl(var(--tsg-blue))]">
-                  {initials(displayName)}
-                </AvatarFallback>
-              </Avatar>
+              <UserAvatar src={avatarUrl} name={displayName} size="xl" className="h-28 w-28 border-4 border-background text-4xl" />
 
               <div className="mb-1 flex-1 min-w-0">
                 <h1 className="truncate font-display text-2xl font-black tracking-wide">
