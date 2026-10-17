@@ -60,7 +60,7 @@ export default function PlayersAdmin() {
   });
   const del = trpc.admin.deletePlayer.useMutation({
     onSuccess: () => {
-      toast.success("Player removed from roster.");
+      toast.success("Player permanently deleted.");
       refresh();
     },
     onError: (e) => toast.error(`Unable to delete player. ${e.message}`),
@@ -206,7 +206,7 @@ export default function PlayersAdmin() {
                           </Button>
                         }
                         title={`Delete ${p.ign}?`}
-                        description="This soft-deletes the player (status set to 'former'). Match history and records are preserved."
+                        description="Permanently delete this player record. Match history, achievements, and other player-related records are cleaned up automatically. This cannot be undone."
                         onConfirm={() => del.mutate({ id: p.id })}
                       />
                     </div>
