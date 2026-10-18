@@ -35,7 +35,12 @@ export function serveStaticFiles(app: App) {
           const result = await getOgMetaForPath(path_);
           if (!result.skip) {
             content = stripDefaultOgTags(content);
-            const meta = buildMetaTagsHtml(result.tags);
+
+            const proto = c.req.header("x-forwarded-proto") || (c.req.header("x-forwarded-host") ? "https" : "http");
+            const host = c.req.header("x-forwarded-host") || c.req.header("host") || "";
+            const origin = host ? `${proto}://${host}` : undefined;
+
+            const meta = buildMetaTagsHtml(result.tags, { origin });
             const marker = "<title>";
             const idx = content.indexOf(marker);
             if (idx !== -1) {
