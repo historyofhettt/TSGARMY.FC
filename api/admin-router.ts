@@ -64,6 +64,7 @@ import {
      fanRewards,
      rewardRedemptions,
      rewardRedemptionHistory,
+     playerSlugRedirects,
 } from "../db/schema";
 import { signKeys } from "./lib/images";
 import { storage } from "./lib/storage";
@@ -1159,8 +1160,28 @@ export const adminRouter = createRouter({
       const db = getDb();
       const { id, ...data } = input;
       if (id) {
-        await db.update(players).set(data).where(eq(players.id, id));
-        return { id };
+        const existing = await db.query.players.findFirst({
+          where: eq(players.id, id),
+          columns: { id: true, slug: true, ign: true },
+        });
+        if (!existing) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Player not found." });
+        }
+
+        const slugChanged = data.ign !== existing.ign;
+        let newSlug = existing.slug;
+        if (slugChanged) {
+          newSlug = await uniqueSlug("players", data.ign, id);
+          if (newSlug !== existing.slug) {
+            await db.insert(playerSlugRedirects).values({
+              oldSlug: existing.slug,
+              playerId: id,
+            });
+          }
+        }
+
+        await db.update(players).set({ ...data, slug: newSlug }).where(eq(players.id, id));
+        return { id, slug: newSlug };
       }
       const slug = await uniqueSlug("players", input.ign);
       const [{ id: newId }] = await db
@@ -1181,14 +1202,12 @@ export const adminRouter = createRouter({
           message: "Player not found.",
         });
       }
-      await db.delete(matchPlayers).where(eq(matchPlayers.playerId, input.id));
-      await db.delete(playerHighlights).where(eq(playerHighlights.playerId, input.id));
+      // Soft-delete: set status to "former" to preserve match history, stats,
+      // achievements, and account links. The player is hidden from active rosters.
       await db
-        .update(tournaments)
-        .set({ mvpPlayerId: null })
-        .where(eq(tournaments.mvpPlayerId, input.id));
-      await db.delete(liveLinks).where(eq(liveLinks.playerId, input.id));
-      await db.delete(players).where(eq(players.id, input.id));
+        .update(players)
+        .set({ status: "former" as const })
+        .where(eq(players.id, input.id));
       return { ok: true };
     }),
 

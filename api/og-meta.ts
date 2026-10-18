@@ -301,8 +301,17 @@ async function getTeamMeta(slug: string): Promise<OgResult> {
 
 async function getPlayerMeta(slug: string): Promise<OgResult> {
   try {
-    const [player] = await db.select().from(schema.players).where(eq(schema.players.slug, slug)).limit(1);
-    if (!player) return { skip: true };
+    let [player] = await db.select().from(schema.players).where(eq(schema.players.slug, slug)).limit(1);
+    if (!player) {
+      const [redirect] = await db
+        .select()
+        .from(schema.playerSlugRedirects)
+        .where(eq(schema.playerSlugRedirects.oldSlug, slug))
+        .limit(1);
+      if (!redirect) return { skip: true };
+      [player] = await db.select().from(schema.players).where(eq(schema.players.id, redirect.playerId)).limit(1);
+      if (!player) return { skip: true };
+    }
 
     const org = await getOrgWithLogo();
     const urls = await signKeys([player.photoKey].filter(Boolean) as string[]);
@@ -310,6 +319,7 @@ async function getPlayerMeta(slug: string): Promise<OgResult> {
 
     const name = player.ign;
     const teamName = player.teamId ? ` — TSG` : "";
+    const currentSlug = player.slug ?? slug;
 
     return {
       skip: false,
@@ -321,7 +331,7 @@ async function getPlayerMeta(slug: string): Promise<OgResult> {
         image: photoUrl,
         type: "profile",
         siteName: org.name,
-        canonicalPath: `/players/${slug}`,
+        canonicalPath: `/players/${currentSlug}`,
       },
     };
   } catch {

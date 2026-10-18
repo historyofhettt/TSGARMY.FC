@@ -39,7 +39,8 @@ import {
    contentComments,
    contentCommentReports,
    mediaAlbums,
-   fanSpotlight,
+    fanSpotlight,
+    playerSlugRedirects,
 } from "../db/schema";
 import { signKeys } from "./lib/images";
 import { getOrgSettings, getXpEnabledRoles, getLiveSectionEnabledRoles } from "./queries/orgSettings";
@@ -675,9 +676,20 @@ export const publicRouter = createRouter({
     .input(z.object({ slug: z.string() }))
     .query(async ({ input }) => {
       const db = getDb();
-      const player = await db.query.players.findFirst({
+      let player = await db.query.players.findFirst({
         where: eq(players.slug, input.slug),
       });
+
+      if (!player) {
+        const redirect = await db.query.playerSlugRedirects.findFirst({
+          where: eq(playerSlugRedirects.oldSlug, input.slug),
+        });
+        if (redirect) {
+          player = await db.query.players.findFirst({
+            where: eq(players.id, redirect.playerId),
+          });
+        }
+      }
       if (!player) return null;
       const team = player.teamId
         ? await db.query.teams.findFirst({
@@ -729,7 +741,34 @@ export const publicRouter = createRouter({
         team,
         stats,
         recentPerformances: allPerfs.slice(-10).reverse(),
+        currentSlug: player.slug,
       };
+    }),
+
+  playerRedirect: publicQuery
+    .input(z.object({ slug: z.string() }))
+    .query(async ({ input }) => {
+      const db = getDb();
+      const player = await db.query.players.findFirst({
+        where: eq(players.slug, input.slug),
+      });
+      if (player) {
+        return { redirect: null, currentSlug: player.slug };
+      }
+
+      const redirect = await db.query.playerSlugRedirects.findFirst({
+        where: eq(playerSlugRedirects.oldSlug, input.slug),
+      });
+      if (redirect) {
+        const current = await db.query.players.findFirst({
+          where: eq(players.id, redirect.playerId),
+        });
+        if (current) {
+          return { redirect: current.slug, currentSlug: current.slug };
+        }
+      }
+
+      return { redirect: null, currentSlug: null };
     }),
 
   // ------------------------------------------------------------- tournaments
