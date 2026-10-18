@@ -104,6 +104,8 @@ const BOT_PATTERNS = [
   /discordbot/i,
   /Twitterbot/i,
   /facebookexternalhit/i,
+  /Instagram/i,
+  /FBIOS/i,
   /WhatsApp/i,
   /TelegramBot/i,
   /LinkedInBot/i,
