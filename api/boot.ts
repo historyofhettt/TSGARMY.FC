@@ -52,10 +52,9 @@ app.use(async (c, next) => {
 });
 app.get(Paths.googleCallback, createGoogleCallbackHandler());
 app.post("/api/oauth/username", createUsernameSelectHandler());
-import { storage } from "./lib/storage";
-import { guessContentType } from "./lib/storage";
 
 app.get("/api/media/download/*", async (c) => {
+  const { storage, guessContentType } = await import("./lib/storage");
   const fileKey = c.req.path.split("/api/media/download/")[1];
   if (!fileKey) return c.json({ error: "Missing file key" }, 400);
   const bytes = await storage.readBytes(fileKey);
@@ -72,6 +71,7 @@ app.get("/api/media/download/*", async (c) => {
 });
 
 app.get("/api/media/view/*", async (c) => {
+  const { storage, guessContentType } = await import("./lib/storage");
   const fileKey = c.req.path.split("/api/media/view/")[1];
   if (!fileKey) return c.json({ error: "Missing file key" }, 400);
   const bytes = await storage.readBytes(fileKey);
@@ -96,6 +96,69 @@ app.use("/api/trpc/*", async (c) => {
   });
 });
 app.all("/api/*", (c) => c.json({ error: "Not Found" }, 404));
+
+// --- Link preview / OG metadata ---
+// For non-API HTML routes, serve index.html with dynamic OG metadata
+// when a known crawler bot requests the page.
+const BOT_PATTERNS = [
+  /discordbot/i,
+  /Twitterbot/i,
+  /facebookexternalhit/i,
+  /WhatsApp/i,
+  /TelegramBot/i,
+  /LinkedInBot/i,
+  /Slackbot/i,
+  /Googlebot/i,
+  /Google-InspectionTool/i,
+  /Bingbot/i,
+  /SemrushBot/i,
+  /AhrefsBot/i,
+  /Slack-LinkExpanding/i,
+];
+
+function isLikelyBot(userAgent: string): boolean {
+  return BOT_PATTERNS.some((p) => p.test(userAgent));
+}
+
+app.get("/*", async (c, next) => {
+  const accept = c.req.header("accept") ?? "";
+  const ua = c.req.header("user-agent") ?? "";
+
+  // Only intercept HTML requests from known bots
+  if (accept.includes("text/html") && isLikelyBot(ua)) {
+    const path = c.req.path;
+    if (!path.startsWith("/api/")) {
+      try {
+        const { getOgMetaForPath, buildMetaTagsHtml, stripDefaultOgTags } = await import("./og-meta");
+        const result = await getOgMetaForPath(path);
+        if (!result.skip) {
+          const fs = await import("fs");
+          const path_ = (await import("path")).default;
+          let html: string;
+          if (env.isProduction) {
+            const distPath = path_.resolve(import.meta.dirname, "../dist/public");
+            html = fs.readFileSync(path_.resolve(distPath, "index.html"), "utf-8");
+          } else {
+            const srcPath = path_.resolve(import.meta.dirname, "../index.html");
+            html = fs.readFileSync(srcPath, "utf-8");
+          }
+          html = stripDefaultOgTags(html);
+          const meta = buildMetaTagsHtml(result.tags);
+          const marker = "<title>";
+          const idx = html.indexOf(marker);
+          if (idx !== -1) {
+            html = html.slice(0, idx) + meta + "\n    " + html.slice(idx);
+          }
+          c.header("Content-Type", "text/html; charset=utf-8");
+          return c.body(html);
+        }
+      } catch (err) {
+        console.error("[og-meta] error:", err);
+      }
+    }
+  }
+  return next();
+});
 
 export default app;
 
