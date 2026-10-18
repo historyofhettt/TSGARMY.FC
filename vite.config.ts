@@ -32,7 +32,7 @@ function ogMetaDevMiddleware(): Plugin {
               const indexPath = path.resolve(__dirname, "index.html");
               let html = fs.readFileSync(indexPath, "utf-8");
               html = stripDefaultOgTags(html);
-              const meta = buildMetaTagsHtml(result.tags);
+              const meta = buildMetaTagsHtml(result.tags, { origin: "http://localhost:3000" });
               const marker = "<title>";
               const idx = html.indexOf(marker);
               if (idx !== -1) {
