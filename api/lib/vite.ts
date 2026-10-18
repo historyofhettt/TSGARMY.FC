@@ -7,7 +7,7 @@ import path from "path";
 type App = Hono<{ Bindings: HttpBindings }>;
 
 function isLikelyBot(userAgent: string): boolean {
-  return /discordbot|Twitterbot|facebookexternalhit|WhatsApp|TelegramBot|LinkedInBot|Slackbot|Googlebot|Google-InspectionTool|Bingbot|SemrushBot|AhrefsBot|Slack-LinkExpanding/i.test(
+  return /discordbot|Twitterbot|facebookexternalhit|Instagram|FBIOS|WhatsApp|TelegramBot|LinkedInBot|Slackbot|Googlebot|Google-InspectionTool|Bingbot|SemrushBot|AhrefsBot|Slack-LinkExpanding/i.test(
     userAgent,
   );
 }
