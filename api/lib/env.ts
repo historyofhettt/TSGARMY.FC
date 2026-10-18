@@ -34,6 +34,7 @@ export const env = {
   s3Endpoint: optional("S3_ENDPOINT"),
   s3ForcePathStyle: optional("S3_FORCE_PATH_STYLE") === "true",
   cdnBaseUrl: optional("CDN_BASE_URL"),
+  siteUrl: optional("SITE_URL"),
 };
 
 if (env.isProduction) {
