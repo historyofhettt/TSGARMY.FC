@@ -366,6 +366,26 @@ export const players = mysqlTable(
 export type Player = typeof players.$inferSelect;
 
 // ---------------------------------------------------------------------------
+// Player slug redirects — preserves old profile URLs when a player's IGN/slug
+// changes, so that shared links don't break.
+// ---------------------------------------------------------------------------
+export const playerSlugRedirects = mysqlTable(
+  "player_slug_redirects",
+  {
+    id: serial("id").primaryKey(),
+    oldSlug: varchar("oldSlug", { length: 255 }).notNull(),
+    playerId: bigint("playerId", { mode: "number", unsigned: true }).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (t) => ({
+    oldSlugIdx: uniqueIndex("player_slug_redirects_old_slug_idx").on(t.oldSlug),
+    playerIdx: index("player_slug_redirects_player_idx").on(t.playerId),
+  }),
+);
+
+export type PlayerSlugRedirect = typeof playerSlugRedirects.$inferSelect;
+
+// ---------------------------------------------------------------------------
 // Tournaments (each belongs to exactly one team)
 // ---------------------------------------------------------------------------
 export const tournaments = mysqlTable(
