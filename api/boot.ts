@@ -143,7 +143,12 @@ app.get("/*", async (c, next) => {
             html = fs.readFileSync(srcPath, "utf-8");
           }
           html = stripDefaultOgTags(html);
-          const meta = buildMetaTagsHtml(result.tags);
+
+          const proto = c.req.header("x-forwarded-proto") || (c.req.header("x-forwarded-host") ? "https" : "http");
+          const host = c.req.header("x-forwarded-host") || c.req.header("host") || "";
+          const origin = host ? `${proto}://${host}` : undefined;
+
+          const meta = buildMetaTagsHtml(result.tags, { origin });
           const marker = "<title>";
           const idx = html.indexOf(marker);
           if (idx !== -1) {

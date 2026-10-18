@@ -28,18 +28,33 @@ export interface MetaTags {
   siteName?: string;
 }
 
-function resolveSiteUrl(path: string): string {
+export interface BuildMetaOptions {
+  origin?: string;
+}
+
+export function resolveOrigin(options?: BuildMetaOptions): string | null {
+  if (options?.origin) {
+    return options.origin.replace(/\/+$/, "");
+  }
   const base = env.siteUrl || "";
   if (base) {
-    return base.replace(/\/+$/, "") + path;
+    return base.replace(/\/+$/, "");
+  }
+  return null;
+}
+
+function resolveAbsoluteUrl(path: string, options?: BuildMetaOptions): string {
+  const origin = resolveOrigin(options);
+  if (origin) {
+    return origin + (path.startsWith("/") ? path : "/" + path);
   }
   return path;
 }
 
-function resolveImageUrl(url: string | null): string | null {
+function resolveImageUrl(url: string | null, options?: BuildMetaOptions): string | null {
   if (!url) return null;
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  return resolveSiteUrl(url);
+  return resolveAbsoluteUrl(url, options);
 }
 
 function escapeHtml(s: string): string {
@@ -67,13 +82,14 @@ export function stripDefaultOgTags(html: string): string {
     .replace(/<meta\s+property=["']og:image:alt["'][^>]*\/>\s*/gi, "");
 }
 
-export function buildMetaTagsHtml(tags: MetaTags): string {
+export function buildMetaTagsHtml(tags: MetaTags, options?: BuildMetaOptions): string {
   const safe = (s: string) => escapeHtml(s);
   const title = safe(tags.title);
   const description = safe(tags.description);
-  const image = tags.image ? safe(resolveImageUrl(tags.image) ?? tags.image) : null;
+  const image = tags.image ? safe(resolveImageUrl(tags.image, options) ?? tags.image) : null;
   const siteName = tags.siteName ? safe(tags.siteName) : null;
   const type = safe(tags.type);
+  const ogUrl = safe(resolveAbsoluteUrl(tags.canonicalPath, options));
 
   const lines: string[] = [];
   lines.push(`<title>${title}</title>`);
@@ -81,7 +97,7 @@ export function buildMetaTagsHtml(tags: MetaTags): string {
   lines.push(`<meta property="og:title" content="${title}" />`);
   lines.push(`<meta property="og:description" content="${description}" />`);
   lines.push(`<meta property="og:type" content="${type}" />`);
-  lines.push(`<meta property="og:url" content="${safe(resolveSiteUrl(tags.canonicalPath))}" />`);
+  lines.push(`<meta property="og:url" content="${ogUrl}" />`);
   if (siteName) {
     lines.push(`<meta property="og:site_name" content="${siteName}" />`);
   }
