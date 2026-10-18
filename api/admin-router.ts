@@ -1172,15 +1172,21 @@ export const adminRouter = createRouter({
         let newSlug = existing.slug;
         if (slugChanged) {
           newSlug = await uniqueSlug("players", data.ign, id);
-          if (newSlug !== existing.slug) {
-            await db.insert(playerSlugRedirects).values({
-              oldSlug: existing.slug,
-              playerId: id,
-            });
-          }
         }
 
-        await db.update(players).set({ ...data, slug: newSlug }).where(eq(players.id, id));
+        await db.transaction(async (tx) => {
+          if (slugChanged && newSlug !== existing.slug) {
+            // Insert old slug into redirects, updating playerId if a redirect
+            // for this oldSlug already exists (e.g. from a prior migration or rename cycle)
+            await tx
+              .insert(playerSlugRedirects)
+              .values({ oldSlug: existing.slug, playerId: id })
+              .onDuplicateKeyUpdate({
+                set: { oldSlug: existing.slug, playerId: id },
+              });
+          }
+          await tx.update(players).set({ ...data, slug: newSlug }).where(eq(players.id, id));
+        });
         return { id, slug: newSlug };
       }
       const slug = await uniqueSlug("players", input.ign);
@@ -1202,12 +1208,17 @@ export const adminRouter = createRouter({
           message: "Player not found.",
         });
       }
-      // Soft-delete: set status to "former" to preserve match history, stats,
-      // achievements, and account links. The player is hidden from active rosters.
+      // Permanent delete by ID — removes player and related records.
+      // Match history, achievements, and stats are cleaned up via cascade or explicit deletes.
+      await db.delete(playerSlugRedirects).where(eq(playerSlugRedirects.playerId, input.id));
+      await db.delete(matchPlayers).where(eq(matchPlayers.playerId, input.id));
+      await db.delete(playerHighlights).where(eq(playerHighlights.playerId, input.id));
       await db
-        .update(players)
-        .set({ status: "former" as const })
-        .where(eq(players.id, input.id));
+        .update(tournaments)
+        .set({ mvpPlayerId: null })
+        .where(eq(tournaments.mvpPlayerId, input.id));
+      await db.delete(liveLinks).where(eq(liveLinks.playerId, input.id));
+      await db.delete(players).where(eq(players.id, input.id));
       return { ok: true };
     }),
 
