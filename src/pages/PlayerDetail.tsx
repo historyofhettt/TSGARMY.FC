@@ -1,4 +1,5 @@
-import { useParams, Link } from "react-router";
+import { useParams, Link, useNavigate } from "react-router";
+import { useEffect } from "react";
 import { ArrowLeft, Instagram, Youtube, Twitter, Crosshair, Target, Trophy, Star } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { PageLayout } from "@/components/PageLayout";
@@ -13,6 +14,18 @@ type Player = NonNullable<RouterOutputs["public"]["playerBySlug"]>;
 
 export default function PlayerDetail() {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
+  const { data: redirectInfo } = trpc.public.playerRedirect.useQuery(
+    { slug: slug ?? "" },
+    { enabled: !!slug },
+  );
+
+  useEffect(() => {
+    if (redirectInfo?.redirect) {
+      navigate(`/players/${redirectInfo.redirect}`, { replace: true });
+    }
+  }, [redirectInfo, navigate]);
+
   const { data: player, isLoading } = trpc.public.playerBySlug.useQuery(
     { slug: slug ?? "" },
     { enabled: !!slug },

@@ -60,7 +60,7 @@ export default function PlayersAdmin() {
   });
   const del = trpc.admin.deletePlayer.useMutation({
     onSuccess: () => {
-      toast.success("Player deleted.");
+      toast.success("Player moved to former status. Match history preserved.");
       refresh();
     },
     onError: (e) => toast.error(`Unable to delete player. ${e.message}`),
@@ -155,6 +155,7 @@ export default function PlayersAdmin() {
             <Plus className="h-4 w-4" /> Add Player
           </Button>
         </div>
+      </div>
 
       {isLoading ? (
         <p className="text-muted-foreground">Loading players...</p>
@@ -204,8 +205,8 @@ export default function PlayersAdmin() {
                             <Trash2 className="h-4 w-4 text-[hsl(var(--tsg-red))]" />
                           </Button>
                         }
-                        title={`Delete ${p.ign}?`}
-                        description="This soft-deletes the player (status set to 'former'). Match history and records are preserved."
+                        title={`Remove ${p.ign}?`}
+                        description="Set this player's status to 'former'. Their profile URL becomes inactive, but match history, achievements, and all records are preserved. This cannot be undone."
                         onConfirm={() => del.mutate({ id: p.id })}
                       />
                     </div>
