@@ -6,18 +6,49 @@ import path from "path";
 
 type App = Hono<{ Bindings: HttpBindings }>;
 
+function isLikelyBot(userAgent: string): boolean {
+  return /discordbot|Twitterbot|facebookexternalhit|WhatsApp|TelegramBot|LinkedInBot|Slackbot|Googlebot|Google-InspectionTool|Bingbot|SemrushBot|AhrefsBot|Slack-LinkExpanding/i.test(
+    userAgent,
+  );
+}
+
 export function serveStaticFiles(app: App) {
   const distPath = path.resolve(import.meta.dirname, "../dist/public");
 
   app.use("*", serveStatic({ root: "./dist/public" }));
 
-  app.notFound((c) => {
+  app.notFound(async (c) => {
     const accept = c.req.header("accept") ?? "";
     if (!accept.includes("text/html")) {
       return c.json({ error: "Not Found" }, 404);
     }
+
     const indexPath = path.resolve(distPath, "index.html");
-    const content = fs.readFileSync(indexPath, "utf-8");
-    return c.html(content);
+    let content = fs.readFileSync(indexPath, "utf-8");
+
+    const ua = c.req.header("user-agent") ?? "";
+    if (isLikelyBot(ua)) {
+      try {
+        const path_ = c.req.path.split("?")[0];
+        if (!path_.startsWith("/api/")) {
+          const { getOgMetaForPath, buildMetaTagsHtml, stripDefaultOgTags } = await import("../og-meta");
+          const result = await getOgMetaForPath(path_);
+          if (!result.skip) {
+            content = stripDefaultOgTags(content);
+            const meta = buildMetaTagsHtml(result.tags);
+            const marker = "<title>";
+            const idx = content.indexOf(marker);
+            if (idx !== -1) {
+              content = content.slice(0, idx) + meta + "\n    " + content.slice(idx);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("[og-meta] error:", err);
+      }
+    }
+
+    c.header("Content-Type", "text/html; charset=utf-8");
+    return c.body(content);
   });
 }

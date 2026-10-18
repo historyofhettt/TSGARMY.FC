@@ -328,8 +328,9 @@ export function getStorage(): StorageProvider {
     return new S3StorageProvider();
   }
   if (env.isProduction) {
-    throw new Error(
-      "Permanent storage is not configured. Set S3_BUCKET, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and AWS_REGION (or S3_REGION) in the production environment to use S3-compatible storage.",
+    console.warn(
+      "[storage] S3_BUCKET or AWS credentials are not set — falling back to local filesystem storage. " +
+        "Uploaded files will be written to the ephemeral filesystem (lost on restart in Render).",
     );
   }
   return new LocalStorage();
