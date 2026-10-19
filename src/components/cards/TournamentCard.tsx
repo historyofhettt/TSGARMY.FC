@@ -23,21 +23,21 @@ export function TournamentCard({ tournament: t }: { tournament: TournamentLike }
   return (
     <TiltCard intensity={6}>
       <Link to={`/tournaments/${t.slug}`} aria-label={`View ${t.name}`}>
-        <div className="glass relative overflow-hidden rounded-2xl p-5 transition hover:border-[hsl(var(--tsg-blue)/0.5)]">
-          <div className="flex items-start gap-4">
+        <div className="glass relative overflow-hidden rounded-2xl p-4 xs:p-5 transition hover:border-[hsl(var(--tsg-blue)/0.5)]">
+          <div className="flex items-start gap-3 xs:gap-4">
             {t.logoUrl ? (
-              <img src={t.logoUrl} alt={`${t.name} logo`} className="h-14 w-14 rounded-lg object-contain" loading="lazy" />
+              <img src={t.logoUrl} alt={`${t.name} logo`} className="h-12 w-12 xs:h-14 xs:w-14 rounded-lg object-contain md:h-20 md:w-20" loading="lazy" />
             ) : (
-              <span className="flex h-14 w-14 items-center justify-center rounded-lg border border-border bg-background/50 font-display text-lg font-bold text-muted-foreground">
+              <span className="flex h-12 w-12 xs:h-14 xs:w-14 items-center justify-center rounded-lg border border-border bg-background/50 font-display text-lg font-bold text-muted-foreground md:text-2xl">
                 {t.name.slice(0, 2).toUpperCase()}
               </span>
             )}
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-2">
-                <h3 className="truncate font-display text-base font-bold tracking-wide">{t.name}</h3>
+                <h3 className="min-w-0 truncate font-display text-base font-bold tracking-wide">{t.name}</h3>
                 <StatusBadge status={t.status} />
               </div>
-              {t.team && <p className="mt-0.5 text-xs text-muted-foreground">{t.team.name}</p>}
+              {t.team && <p className="mt-0.5 truncate text-xs text-muted-foreground">{t.team.name}</p>}
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1.5">
                   <CalendarDays className="h-3.5 w-3.5" /> {formatDate(t.startDate)}
@@ -47,7 +47,7 @@ export function TournamentCard({ tournament: t }: { tournament: TournamentLike }
                     <Clock className="h-3.5 w-3.5" /> {t.startTime}
                   </span>
                 )}
-                <span>
+                <span className="truncate">
                   {t.status === "ongoing" && typeof t.matchesPlayed === "number"
                     ? `Match ${t.matchesPlayed} / ${t.numberOfMatches}`
                     : `${t.numberOfMatches} matches`}
@@ -56,7 +56,7 @@ export function TournamentCard({ tournament: t }: { tournament: TournamentLike }
             </div>
           </div>
           {(t.youtubeLiveUrl || t.instagramLiveUrl) && t.status !== "completed" && (
-            <div className="mt-4 flex gap-2 border-t border-border pt-3">
+            <div className="mt-4 flex flex-col gap-2 border-t border-border pt-3 sm:flex-row sm:gap-3">
               {t.youtubeLiveUrl && (
                 <span className="flex items-center gap-1.5 text-xs font-semibold text-[hsl(var(--tsg-red))]">
                   <Youtube className="h-3.5 w-3.5" /> YouTube Live

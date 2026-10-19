@@ -13,7 +13,7 @@ function Socials({ person }: { person: Person }) {
   ].filter((s) => s.href);
   if (socials.length === 0) return null;
   return (
-    <div className="flex justify-center gap-2">
+    <div className="flex justify-center gap-3">
       {socials.map((s) => (
         <a
           key={s.label}
@@ -21,9 +21,9 @@ function Socials({ person }: { person: Person }) {
           target="_blank"
           rel="noreferrer"
           aria-label={`${person.name} on ${s.label}`}
-          className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted-foreground transition hover:border-[hsl(var(--tsg-blue)/0.6)] hover:text-[hsl(var(--tsg-blue))]"
+          className="flex h-10 w-10 items-center justify-center rounded-md border border-border text-muted-foreground transition hover:border-[hsl(var(--tsg-blue)/0.6)] hover:text-[hsl(var(--tsg-blue))]"
         >
-          <s.icon className="h-4 w-4" />
+          <s.icon className="h-5 w-5" />
         </a>
       ))}
     </div>

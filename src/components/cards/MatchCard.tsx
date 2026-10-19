@@ -55,35 +55,35 @@ export function MatchCard({ match }: { match: MatchLike }) {
 
         {match.mapName && (
           <div className="mt-3 flex items-center gap-2.5">
-            <div className="h-20 w-20 overflow-hidden rounded-lg border border-border bg-background/40 sm:h-24 sm:w-24">
+            <div className="h-16 w-16 overflow-hidden rounded-lg border border-border bg-background/40 xs:h-20 xs:w-20 sm:h-24 sm:w-24">
               {match.mapUrl ? (
                 <img src={match.mapUrl} alt={match.mapName} className="h-full w-full object-cover" />
               ) : (
                 <div className="flex h-full w-full items-center justify-center">
-                  <MapPin className="h-6 w-6 text-muted-foreground" />
+                  <MapPin className="h-5 w-5 text-muted-foreground xs:h-6 xs:w-6" />
                 </div>
               )}
             </div>
-            <span className="text-sm font-bold tracking-wide">{match.mapName.toUpperCase()}</span>
+            <span className="min-w-0 truncate text-xs font-bold tracking-wide xs:text-sm">{match.mapName.toUpperCase()}</span>
           </div>
         )}
 
-        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="mt-4 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
           <div className="rounded-lg bg-[hsl(var(--tsg-blue)/0.08)] p-2 text-center">
-            <p className="text-[9px] uppercase tracking-widest text-muted-foreground">Placement</p>
-            <p className="font-display text-sm font-black text-[hsl(var(--tsg-blue))]">{placementPoints}</p>
+            <p className="text-[8px] uppercase tracking-widest text-muted-foreground xs:text-[9px]">Placement</p>
+            <p className="font-display text-xs font-black text-[hsl(var(--tsg-blue))] sm:text-sm">{placementPoints}</p>
           </div>
           <div className="rounded-lg bg-[hsl(var(--tsg-blue)/0.08)] p-2 text-center">
-            <p className="text-[9px] uppercase tracking-widest text-muted-foreground">Finishes</p>
-            <p className="font-display text-sm font-black text-[hsl(var(--tsg-blue))]">{finishPoints}</p>
+            <p className="text-[8px] uppercase tracking-widest text-muted-foreground xs:text-[9px]">Finishes</p>
+            <p className="font-display text-xs font-black text-[hsl(var(--tsg-blue))] sm:text-sm">{finishPoints}</p>
           </div>
           <div className="rounded-lg bg-[hsl(var(--tsg-blue)/0.08)] p-2 text-center">
-            <p className="text-[9px] uppercase tracking-widest text-muted-foreground">Total</p>
-            <p className="font-display text-sm font-black text-[hsl(var(--tsg-blue))]">{totalPoints}</p>
+            <p className="text-[8px] uppercase tracking-widest text-muted-foreground xs:text-[9px]">Total</p>
+            <p className="font-display text-xs font-black text-[hsl(var(--tsg-blue))] sm:text-sm">{totalPoints}</p>
           </div>
           <div className="rounded-lg bg-[hsl(var(--tsg-blue)/0.08)] p-2 text-center">
-            <p className="text-[9px] uppercase tracking-widest text-muted-foreground">Overall</p>
-            <p className="font-display text-sm font-black text-[hsl(var(--tsg-blue))]">{overallPoints}</p>
+            <p className="text-[8px] uppercase tracking-widest text-muted-foreground xs:text-[9px]">Overall</p>
+            <p className="font-display text-xs font-black text-[hsl(var(--tsg-blue))] sm:text-sm">{overallPoints}</p>
           </div>
         </div>
       </div>
