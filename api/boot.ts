@@ -132,7 +132,11 @@ app.get("/*", async (c, next) => {
     if (!path.startsWith("/api/")) {
       try {
         const { getOgMetaForPath, buildMetaTagsHtml, stripDefaultOgTags } = await import("./og-meta");
-        const result = await getOgMetaForPath(path);
+        const proto = c.req.header("x-forwarded-proto") || (c.req.header("x-forwarded-host") ? "https" : "http");
+        const host = c.req.header("x-forwarded-host") || c.req.header("host") || "";
+        const origin = host ? `${proto}://${host}` : undefined;
+
+        const result = await getOgMetaForPath(path, { origin });
         if (!result.skip) {
           const fs = await import("fs");
           const path_ = (await import("path")).default;
@@ -145,10 +149,6 @@ app.get("/*", async (c, next) => {
             html = fs.readFileSync(srcPath, "utf-8");
           }
           html = stripDefaultOgTags(html);
-
-          const proto = c.req.header("x-forwarded-proto") || (c.req.header("x-forwarded-host") ? "https" : "http");
-          const host = c.req.header("x-forwarded-host") || c.req.header("host") || "";
-          const origin = host ? `${proto}://${host}` : undefined;
 
           const meta = buildMetaTagsHtml(result.tags, { origin });
           const marker = "<title>";
