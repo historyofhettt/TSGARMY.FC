@@ -3,6 +3,10 @@ module.exports = {
   darkMode: ["class"],
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
+    screens: {
+      xs: "375px",
+      ...require("tailwindcss/defaultTheme").screens,
+    },
     extend: {
       colors: {
         border: "hsl(var(--border))",
