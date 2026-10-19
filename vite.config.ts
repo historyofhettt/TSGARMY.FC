@@ -26,7 +26,7 @@ function ogMetaDevMiddleware(): Plugin {
             }
 
             const { getOgMetaForPath, buildMetaTagsHtml, stripDefaultOgTags } = await import("./api/og-meta.ts");
-            const result = await getOgMetaForPath(pathname);
+            const result = await getOgMetaForPath(pathname, { origin: "http://localhost:3000" });
             if (!result.skip) {
               const fs = await import("fs");
               const indexPath = path.resolve(__dirname, "index.html");
