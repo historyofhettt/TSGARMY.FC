@@ -157,7 +157,7 @@ export function HighlightCommentSection({ highlightId }: { highlightId: number }
         </p>
       )}
 
-      <div className="mt-3 flex items-center gap-1 text-xs">
+      <div className="mt-3 flex flex-wrap items-center gap-1 text-xs">
         <button
           onClick={() =>
             isAuthenticated ? reactMut.mutate({ commentId: c.id }) : navigate("/login")

@@ -188,7 +188,7 @@ export function HighlightPlayerCard({ highlight, showActions = true }: Highlight
           <span>{highlight.views} views</span>
         </div>
 
-        <div className="mt-3 flex items-center gap-4">
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
           <button
             onClick={handleLike}
             className={cn(
@@ -208,7 +208,7 @@ export function HighlightPlayerCard({ highlight, showActions = true }: Highlight
           </button>
           <button
             onClick={handleShare}
-            className="ml-auto flex items-center gap-1 text-sm text-muted-foreground hover:text-[hsl(var(--tsg-blue))] transition"
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-[hsl(var(--tsg-blue))] transition"
           >
             <Share2 className="h-4 w-4" /> Share
           </button>

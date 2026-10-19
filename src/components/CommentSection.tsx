@@ -86,9 +86,9 @@ export function CommentSection({ tournamentId }: { tournamentId: number }) {
   };
 
   const CommentRow = ({ c, isReply }: { c: CommentItem; isReply?: boolean }) => (
-    <article className={cn("glass rounded-xl p-4", isReply && "ml-8 border-l-2 border-l-[hsl(var(--tsg-blue)/0.4)] md:ml-12")}>
+    <article className={cn("glass rounded-xl p-3 xs:p-4", isReply && "ml-6 border-l-2 border-l-[hsl(var(--tsg-blue)/0.4)] md:ml-12")}>
         <div className="flex items-center gap-2.5">
-          <UserAvatar src={c.userAvatar} name={c.userName} username={c.userUsername ?? undefined} />
+          <UserAvatar src={c.userAvatar} name={c.userName} username={c.userUsername ?? undefined} size="sm" />
           <span className="text-sm font-semibold">
           {c.userUsername ? (
             <Link to={`/fans/${c.userUsername}`} className="hover:underline">
@@ -104,7 +104,7 @@ export function CommentSection({ tournamentId }: { tournamentId: number }) {
             <Pin className="h-3 w-3" /> Pinned
           </span>
         )}
-        <span className="ml-auto text-xs text-muted-foreground">{timeAgo(c.createdAt)}</span>
+        <span className="ml-auto truncate text-xs text-muted-foreground">{timeAgo(c.createdAt)}</span>
       </div>
 
       {editing?.id === c.id ? (

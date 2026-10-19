@@ -52,7 +52,7 @@ export function PointTableViewer({ open, onOpenChange, imageUrl, title = "Final 
 
   return (
     <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) reset(); }}>
-      <DialogContent className="glass-strong flex h-[90vh] max-w-5xl flex-col border-border p-0">
+      <DialogContent className="glass-strong flex h-[70vh] max-w-[95vw] flex-col border-border p-0 sm:h-[80vh] sm:max-w-3xl md:max-w-4xl xl:max-w-5xl">
         <DialogTitle className="sr-only">{title}</DialogTitle>
         <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
           <p className="font-display text-sm font-bold tracking-[0.2em]">{title.toUpperCase()}</p>

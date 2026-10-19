@@ -51,9 +51,9 @@ export function CardDisplay({ card, quantity, size = "md", onClick, showDetails 
   const remaining = (card.totalSupply ?? 0) - (card.claimedSupply ?? 0);
   const soldOut = remaining <= 0;
   const sizeClasses = {
-    sm: "aspect-[3/4] min-w-[80px]",
-    md: "aspect-[3/4] w-36",
-    lg: "aspect-[3/4] w-48",
+    sm: "aspect-[3/4] min-w-[64px]",
+    md: "aspect-[3/4] w-full xs:w-32 sm:w-36",
+    lg: "aspect-[3/4] w-full xs:w-40 sm:w-48",
   };
 
   return (

@@ -34,7 +34,7 @@ export function Footer() {
     <footer className="relative mt-24 border-t border-border bg-[hsl(var(--tsg-navy))]">
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[hsl(var(--tsg-blue)/0.6)] to-transparent" />
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 md:grid-cols-4 md:px-8">
-        <div>
+        <div className="md:col-span-2">
           <div className="flex items-center gap-2.5">
             {org?.footerLogoUrl ? (
               <img src={org.footerLogoUrl} alt="TSG logo" className="h-10 w-10 shrink-0 rounded-md object-contain" loading="lazy" />
@@ -48,7 +48,7 @@ export function Footer() {
               <p className="text-xs text-muted-foreground">{org?.orgName ?? "Two Side Gamers"}</p>
             </div>
           </div>
-          <p className="mt-4 text-sm text-muted-foreground">
+          <p className="mt-4 max-w-md text-sm text-muted-foreground">
             {org?.tagline ?? "Built for Competition. Driven by Legacy."}
           </p>
         </div>
