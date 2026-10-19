@@ -10,14 +10,9 @@ const db = drizzle(env.databaseUrl, {
   schema: fullSchema,
 });
 
-let signKeysCache: ((keys: (string | null | undefined)[]) => Promise<Record<string, string>>) | null = null;
-
-async function signKeys(keys: (string | null | undefined)[]): Promise<Record<string, string>> {
-  if (!signKeysCache) {
-    signKeysCache = (await import("./lib/images")).signKeys;
-  }
-  return signKeysCache(keys);
-}
+// Module-level origin set during getOgMetaForPath so that getOrgWithLogo
+// can construct absolute URLs without threading options through every sub-function.
+let currentRequestOrigin: string | null = null;
 
 export interface MetaTags {
   title: string;
@@ -40,6 +35,10 @@ export function resolveOrigin(options?: BuildMetaOptions): string | null {
   if (base) {
     return base.replace(/\/+$/, "");
   }
+  // Fall back to the current request origin (set by getOgMetaForPath during request handling)
+  if (currentRequestOrigin) {
+    return currentRequestOrigin.replace(/\/+$/, "");
+  }
   return null;
 }
 
@@ -53,7 +52,23 @@ function resolveAbsoluteUrl(path: string, options?: BuildMetaOptions): string {
 
 function resolveImageUrl(url: string | null, options?: BuildMetaOptions): string | null {
   if (!url) return null;
-  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    // Presigned URLs have expiring query params that break HEAD requests (used by
+    // Instagram/Facebook link preview crawlers). If a CDN base URL is configured,
+    // strip the query params and use the CDN path. Otherwise, keep the URL as-is
+    // — the signKeys function returns URLs that the R2/Cloudflare infrastructure
+    // may serve correctly for GET requests (the main crawler request).
+    const cdnBase = env.cdnBaseUrl;
+    if (cdnBase) {
+      try {
+        const parsed = new URL(url);
+        return cdnBase + parsed.pathname;
+      } catch {
+        return url;
+      }
+    }
+    return url;
+  }
   return resolveAbsoluteUrl(url, options);
 }
 
@@ -115,7 +130,7 @@ export function buildMetaTagsHtml(tags: MetaTags, options?: BuildMetaOptions): s
   return lines.join("\n    ");
 }
 
-async function getOrgWithLogo(): Promise<{
+async function getOrgWithLogo(options?: BuildMetaOptions): Promise<{
   name: string;
   tagline: string;
   description: string | null;
@@ -126,8 +141,11 @@ async function getOrgWithLogo(): Promise<{
     await db.insert(schema.orgSettings).values({});
     [org] = await db.select().from(schema.orgSettings).limit(1);
   }
-  const urls = await signKeys([org.logoKey].filter(Boolean) as string[]);
-  const logoUrl = org.logoKey ? (urls[org.logoKey] ?? null) : null;
+  // For OG metadata, use a static public URL instead of presigned URLs that expire
+  // and don't work with HEAD requests (Instagram/Facebook link previews use HEAD).
+  // Fall back to /logo.png served from the app origin.
+  const origin = resolveOrigin(options);
+  const logoUrl = origin ? `${origin}/logo.png` : "/logo.png";
   return {
     name: org.orgName,
     tagline: org.tagline,
@@ -140,7 +158,7 @@ export type OgResult =
   | { skip: false; tags: MetaTags }
   | { skip: true };
 
-export async function getOgMetaForPath(pathname: string): Promise<OgResult> {
+export async function getOgMetaForPath(pathname: string, options?: BuildMetaOptions): Promise<OgResult> {
   let rawPath = pathname.split("?")[0].split("#")[0];
   // Normalize: strip trailing slash (except root)
   if (rawPath.length > 1) {
@@ -148,6 +166,11 @@ export async function getOgMetaForPath(pathname: string): Promise<OgResult> {
   }
 
   const segments = rawPath.split("/").filter(Boolean);
+
+  // Set the current request origin for getOrgWithLogo to use
+  if (options?.origin) {
+    currentRequestOrigin = options.origin;
+  }
 
   // --- Static routes with fixed metadata ---
   const staticRoutes: Record<string, { title: string; description: string; type: string }> = {
@@ -278,8 +301,9 @@ async function getTeamMeta(slug: string): Promise<OgResult> {
     if (!team) return { skip: true };
 
     const org = await getOrgWithLogo();
-    const urls = await signKeys([team.logoKey].filter(Boolean) as string[]);
-    const logoUrl = team.logoKey ? (urls[team.logoKey] ?? org.logoUrl) : org.logoUrl;
+    // Use org logo for OG metadata — presigned URLs don't work with HEAD requests
+    // used by Instagram/Facebook link preview crawlers
+    const logoUrl = org.logoUrl;
 
     return {
       skip: false,
@@ -314,8 +338,9 @@ async function getPlayerMeta(slug: string): Promise<OgResult> {
     }
 
     const org = await getOrgWithLogo();
-    const urls = await signKeys([player.photoKey].filter(Boolean) as string[]);
-    const photoUrl = player.photoKey ? (urls[player.photoKey] ?? org.logoUrl) : org.logoUrl;
+    // For OG metadata, use the static org logo (works with HEAD requests for Instagram previews)
+    // instead of presigned URLs that expire and don't support HEAD requests
+    const photoUrl = org.logoUrl;
 
     const name = player.ign;
     const teamName = player.teamId ? ` — TSG` : "";
@@ -345,10 +370,7 @@ async function getTournamentMeta(slug: string): Promise<OgResult> {
     if (!tournament) return { skip: true };
 
     const org = await getOrgWithLogo();
-    const urls = await signKeys([tournament.logoKey].filter(Boolean) as string[]);
-    const logoUrl = tournament.logoKey
-      ? (urls[tournament.logoKey] ?? org.logoUrl)
-      : org.logoUrl;
+    const logoUrl = org.logoUrl;
 
     return {
       skip: false,
@@ -403,12 +425,8 @@ async function getMediaAlbumMeta(idStr: string): Promise<OgResult> {
     if (!album) return { skip: true };
 
     const org = await getOrgWithLogo();
-    const urls = await signKeys(
-      album.coverKey ? [album.coverKey] : [],
-    );
-    const coverUrl = album.coverKey
-      ? (urls[album.coverKey] ?? org.logoUrl)
-      : org.logoUrl;
+    // Use org logo for OG metadata — presigned URLs don't work with HEAD requests
+    const coverUrl = org.logoUrl;
 
     return {
       skip: false,
@@ -441,12 +459,8 @@ async function getFanSpotlightMeta(idStr: string): Promise<OgResult> {
     if (!spotlight) return { skip: true };
 
     const org = await getOrgWithLogo();
-    const urls = await signKeys(
-      spotlight.thumbnailKey ? [spotlight.thumbnailKey] : [],
-    );
-    const imageUrl = spotlight.thumbnailKey
-      ? (urls[spotlight.thumbnailKey] ?? org.logoUrl)
-      : (spotlight.thumbnailUrl ?? org.logoUrl);
+    // Use org logo for OG metadata — presigned URLs don't work with HEAD requests
+    const imageUrl = org.logoUrl;
 
     return {
       skip: false,
