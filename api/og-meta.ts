@@ -143,9 +143,9 @@ async function getOrgWithLogo(options?: BuildMetaOptions): Promise<{
   }
   // For OG metadata, use a static public URL instead of presigned URLs that expire
   // and don't work with HEAD requests (Instagram/Facebook link previews use HEAD).
-  // Use /og-image.png (1200x630) served from the app origin.
+  // Use /logo.png served from the app origin.
   const origin = resolveOrigin(options);
-  const logoUrl = origin ? `${origin}/og-image.png` : "/og-image.png";
+  const logoUrl = origin ? `${origin}/logo.png` : "/logo.png";
   return {
     name: org.orgName,
     tagline: org.tagline,
