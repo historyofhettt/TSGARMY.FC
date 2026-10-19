@@ -170,12 +170,12 @@ export default function TournamentDetail() {
 
       <div className="mx-auto max-w-7xl px-4 py-12 md:px-8">
           <Tabs defaultValue="matches">
-            <TabsList className="mb-8 flex flex-wrap">
-              <TabsTrigger value="matches" className="flex-1 min-w-[140px] xs:flex-none">MATCH RESULTS</TabsTrigger>
-              <TabsTrigger value="performance" className="flex-1 min-w-[140px] xs:flex-none">PLAYER PERFORMANCE</TabsTrigger>
-              <TabsTrigger value="pointtable" className="flex-1 min-w-[140px] xs:flex-none">FINAL POINT TABLE</TabsTrigger>
-              <TabsTrigger value="predictions" className="flex-1 min-w-[140px] xs:flex-none">PREDICTIONS</TabsTrigger>
-              <TabsTrigger value="community" className="flex-1 min-w-[140px] xs:flex-none">COMMUNITY</TabsTrigger>
+            <TabsList className="mb-10 w-full overflow-x-auto sm:w-fit">
+              <TabsTrigger value="matches" className="flex-none min-w-[140px] sm:flex-1 sm:min-w-0">MATCH RESULTS</TabsTrigger>
+              <TabsTrigger value="performance" className="flex-none min-w-[140px] sm:flex-1 sm:min-w-0">PLAYER PERFORMANCE</TabsTrigger>
+              <TabsTrigger value="pointtable" className="flex-none min-w-[140px] sm:flex-1 sm:min-w-0">FINAL POINT TABLE</TabsTrigger>
+              <TabsTrigger value="predictions" className="flex-none min-w-[140px] sm:flex-1 sm:min-w-0">PREDICTIONS</TabsTrigger>
+              <TabsTrigger value="community" className="flex-none min-w-[140px] sm:flex-1 sm:min-w-0">COMMUNITY</TabsTrigger>
             </TabsList>
 
           <TabsContent value="matches" className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
