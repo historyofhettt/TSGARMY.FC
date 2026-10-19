@@ -82,6 +82,8 @@ function slugify(text: string) {
     .replace(/^-|-$/g, "");
 }
 
+export { slugify };
+
 async function uniqueSlug(
   table: "teams" | "players" | "tournaments",
   base: string,

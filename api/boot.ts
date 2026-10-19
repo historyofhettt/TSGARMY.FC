@@ -8,8 +8,96 @@ import { createGoogleCallbackHandler } from "./google/auth";
 import { createUsernameSelectHandler } from "./oauth/username";
 import { Paths } from "@contracts/constants";
 import { runNotificationScheduler } from "./queries/notifications";
+import { getDb } from "./queries/connection";
+import * as schema from "../db/schema";
+import { eq } from "drizzle-orm";
+import { slugify } from "./admin-router";
 
 const app = new Hono<{ Bindings: HttpBindings }>();
+
+// --- Startup data migration: sync player slugs to current IGNs ---
+// Many players have slugs derived from previous usernames (e.g., TSG VORTEX → tsg-vortex).
+// This script updates each player's slug to match their current IGN and preserves
+// the old slug as a redirect, so shared links don't break.
+// Runs idempotently on every server startup.
+async function runPlayerSlugMigration() {
+  try {
+    const db = getDb();
+
+    // Fetch all players
+    const allPlayers = await db
+      .select({ id: schema.players.id, ign: schema.players.ign, slug: schema.players.slug })
+      .from(schema.players);
+
+    // Compute expected slug for each player and collect updates
+    interface SlugUpdate {
+      id: number;
+      oldSlug: string;
+      newSlug: string;
+    }
+    const updates: SlugUpdate[] = [];
+
+    // Track which expected slugs are already taken by players that don't need updating
+    const takenSlugs = new Set<string>();
+    for (const p of allPlayers) {
+      const expectedSlug = slugify(p.ign);
+      if (p.slug === expectedSlug) {
+        takenSlugs.add(expectedSlug);
+      }
+    }
+
+    // Collect needed updates, handling conflicts where multiple players want the same new slug
+    const claimedSlugs = new Map<string, number>(); // newSlug → playerId
+    for (const p of allPlayers) {
+      const expectedSlug = slugify(p.ign);
+      if (p.slug === expectedSlug) continue;
+
+      if (takenSlugs.has(expectedSlug) || claimedSlugs.has(expectedSlug)) {
+        // Conflict: slug is already taken by a player that doesn't need updating,
+        // or by another player that also needs updating. Skip (can't safely resolve).
+        continue;
+      }
+      takenSlugs.add(expectedSlug);
+      claimedSlugs.set(expectedSlug, p.id);
+      updates.push({ id: p.id, oldSlug: p.slug, newSlug: expectedSlug });
+    }
+
+    if (updates.length === 0) {
+      return;
+    }
+
+    // Sort to handle the case where one player's old slug is another's new slug.
+    // e.g., Player A (slug=tsg-nova) wants tsg-dips, Player B (slug=tsg-novaa) wants tsg-nova.
+    // We must update Player A first so that tsg-nova is free for Player B.
+    const sortedUpdates = updates.sort((a, b) => {
+      if (a.newSlug === b.oldSlug) return 1;   // B's old == A's new → B first
+      if (b.newSlug === a.oldSlug) return -1;  // A's old == B's new → A first
+      return 0;
+    });
+
+    // Use a transaction for atomicity
+    await db.transaction(async (tx) => {
+      for (const update of sortedUpdates) {
+        // Insert old slug as a redirect (upsert)
+        await tx
+          .insert(schema.playerSlugRedirects)
+          .values({ oldSlug: update.oldSlug, playerId: update.id })
+          .onDuplicateKeyUpdate({ set: { playerId: update.id } });
+
+        // Update the player's slug
+        await tx
+          .update(schema.players)
+          .set({ slug: update.newSlug })
+          .where(eq(schema.players.id, update.id));
+      }
+    });
+
+    console.log(`[migration] Updated ${updates.length} player slugs to match current IGNs:`,
+      updates.map(u => `${u.oldSlug}→${u.newSlug}`));
+  } catch (err) {
+    console.error("[migration] Player slug sync failed:", err);
+  }
+}
 
 // Security headers middleware
 app.use(async (c, next) => {
@@ -193,6 +281,8 @@ if (env.isProduction) {
   const { serve } = await import("@hono/node-server");
   const { serveStaticFiles } = await import("./lib/vite");
   serveStaticFiles(app);
+
+  void runPlayerSlugMigration();
 
   const port = parseInt(process.env.PORT || "3000");
   serve({ fetch: app.fetch, port, hostname: "0.0.0.0" }, () => {
