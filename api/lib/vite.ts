@@ -19,6 +19,44 @@ export function serveStaticFiles(app: App) {
 
   app.notFound(async (c) => {
     const accept = c.req.header("accept") ?? "";
+
+    // Non-HTML paths (robots.txt, sitemap.xml, JSON API routes, etc.)
+    // should always get a 404, never an HTML SPA fallback.
+    const reqPath = c.req.path.split("?")[0];
+    const isHtmlRoute =
+      reqPath === "/" ||
+      reqPath === "/teams" ||
+      reqPath === "/players" ||
+      reqPath === "/tournaments" ||
+      reqPath === "/schedule" ||
+      reqPath === "/live" ||
+      reqPath === "/community" ||
+      reqPath === "/media" ||
+      reqPath === "/about" ||
+      reqPath === "/leaderboard" ||
+      reqPath === "/cards" ||
+      reqPath === "/rewards" ||
+      reqPath === "/spotlight" ||
+      reqPath === "/fan" ||
+      reqPath === "/profile" ||
+      reqPath === "/notifications" ||
+      reqPath === "/login" ||
+      reqPath === "/collection";
+
+    // Dynamic routes — anything starting with a known prefix
+    const isDynamicRoute =
+      reqPath.startsWith("/teams/") ||
+      reqPath.startsWith("/players/") ||
+      reqPath.startsWith("/tournaments/") ||
+      reqPath.startsWith("/fans/") ||
+      reqPath.startsWith("/u/") ||
+      reqPath.startsWith("/media/album/") ||
+      reqPath.startsWith("/spotlight/");
+
+    if (!isHtmlRoute && !isDynamicRoute) {
+      return c.json({ error: "Not Found" }, 404);
+    }
+
     if (!accept.includes("text/html")) {
       return c.json({ error: "Not Found" }, 404);
     }
