@@ -73,3 +73,12 @@ INSERT INTO player_slug_redirects (oldSlug, playerId)
   VALUES ('tsg-novaa', 5003531)
   ON DUPLICATE KEY UPDATE playerId = VALUES(playerId);
 UPDATE players SET slug = 'tsg-nova' WHERE id = 5003531 AND slug = 'tsg-novaa';
+
+-- Step 2: Cleanup — remove redirect entries where the old slug is now owned
+-- by a different player (slug hijacking). After updating all slugs above,
+-- any redirect whose oldSlug now matches a player's current slug directly
+-- (via players.id) should only point to that player. If it points elsewhere,
+-- delete it so the direct slug match in playerBySlug takes priority.
+DELETE pr FROM player_slug_redirects pr
+  INNER JOIN players p ON p.slug = pr.oldSlug
+  WHERE pr.playerId != p.id;
