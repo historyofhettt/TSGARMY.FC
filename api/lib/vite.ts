@@ -32,13 +32,13 @@ export function serveStaticFiles(app: App) {
         const path_ = c.req.path.split("?")[0];
         if (!path_.startsWith("/api/")) {
           const { getOgMetaForPath, buildMetaTagsHtml, stripDefaultOgTags } = await import("../og-meta");
-          const result = await getOgMetaForPath(path_);
+          const proto = c.req.header("x-forwarded-proto") || (c.req.header("x-forwarded-host") ? "https" : "http");
+          const host = c.req.header("x-forwarded-host") || c.req.header("host") || "";
+          const origin = host ? `${proto}://${host}` : undefined;
+
+          const result = await getOgMetaForPath(path_, { origin });
           if (!result.skip) {
             content = stripDefaultOgTags(content);
-
-            const proto = c.req.header("x-forwarded-proto") || (c.req.header("x-forwarded-host") ? "https" : "http");
-            const host = c.req.header("x-forwarded-host") || c.req.header("host") || "";
-            const origin = host ? `${proto}://${host}` : undefined;
 
             const meta = buildMetaTagsHtml(result.tags, { origin });
             const marker = "<title>";
