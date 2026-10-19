@@ -114,6 +114,19 @@ app.use(async (c, next) => {
   }
 });
 
+// Temporary request logging middleware — REMOVE BEFORE PRODUCTION
+// Logs method, path, user-agent, cf-ray (if present), and response status
+// Does NOT log cookies, tokens, passwords, or personal data.
+app.use(async (c, next) => {
+  const method = c.req.method;
+  const path = c.req.path;
+  const ua = c.req.header("user-agent") ?? "-";
+  const cfRayReq = c.req.header("cf-ray") ?? "";
+  await next();
+  const cfRayRes = c.res.headers.get("cf-ray") ?? cfRayReq;
+  console.log(`[reqlog] ${method} ${path} | UA: ${ua} | CF-Ray: ${cfRayRes || "-"} | Status: ${c.res.status}`);
+});
+
 // Body size limit — compatible with @hono/vite-dev-server (which wraps
 // the raw Request in a way that breaks hono's bodyLimit middleware and
 // makes `new Request(raw, ...)` throw in dev mode).
