@@ -120,6 +120,20 @@
         "when": 1791887000000,
         "tag": "0043_footer_logo",
         "breakpoints": false
+      },
+      {
+        "idx": 43,
+        "version": "5",
+        "when": 1791888000000,
+        "tag": "0044_player_slug_redirects",
+        "breakpoints": false
+      },
+      {
+        "idx": 44,
+        "version": "5",
+        "when": 1792519200000,
+        "tag": "0045_update_player_slugs_to_match_ign",
+        "breakpoints": false
       }
     ]
   }
