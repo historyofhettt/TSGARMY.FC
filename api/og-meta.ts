@@ -177,7 +177,7 @@ export async function getOgMetaForPath(pathname: string, options?: BuildMetaOpti
     "/": {
       title: "TSG — Two Side Gamers | Esports Organization",
       description:
-        "Built for Competition. Driven by Legacy. TSG ARMY & TSG ARTEMIS. Tournaments, rosters, live matches and player statistics.",
+        "Built for Competition. Driven by Legacy. TSG ARMY. Tournaments, rosters, live matches and player statistics.",
       type: "website",
     },
     "/teams": {
