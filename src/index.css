@@ -3,6 +3,9 @@
 @tailwind utilities;
 
 @layer base {
+  html, body {
+    overflow-x: clip;
+  }
   :root {
     /* TSG design tokens — dark first */
     --background: 224 45% 4%;
