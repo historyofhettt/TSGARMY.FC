@@ -11,7 +11,7 @@ function ogMetaDevMiddleware(): Plugin {
   return {
     name: "og-meta-dev",
     async configureServer(server) {
-      const botRegex = /discordbot|Twitterbot|facebookexternalhit|Instagram|FBIOS|WhatsApp|TelegramBot|LinkedInBot|Slackbot|Googlebot|Google-InspectionTool|Bingbot|SemrushBot|AhrefsBot|Slack-LinkExpanding/i;
+      const botRegex = /discordbot|Twitterbot|facebookexternalhit|Meta-External-Agent|Instagram|FBIOS|WhatsApp|TelegramBot|LinkedInBot|Slackbot|Googlebot|Google-InspectionTool|Bingbot|SemrushBot|AhrefsBot|Slack-LinkExpanding/i;
 
       server.middlewares.use(async (req: { url?: string; headers: Record<string, string | string[] | undefined> }, _res: { writeHead: (code: number, headers: Record<string, string>) => void; end: (data: string) => void }, next: () => void) => {
         const ua = (req.headers["user-agent"] as string | undefined) ?? "";
