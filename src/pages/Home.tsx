@@ -46,6 +46,25 @@ export default function Home() {
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-background to-transparent" />
 
         <div className="relative z-10 px-4 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+          >
+            <a
+              href="https://tsgarmy-fc.onrender.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block"
+            >
+              <img
+                src="/logo.png"
+                alt="TSG Logo"
+                className="mx-auto h-24 w-auto rounded-lg object-contain shadow-2xl sm:h-32 md:h-40"
+                loading="lazy"
+              />
+            </a>
+          </motion.div>
           <motion.p
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
