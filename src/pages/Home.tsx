@@ -51,19 +51,12 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
           >
-            <a
-              href="https://tsgarmy-fc.onrender.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block"
-            >
-              <img
-                src="/logo.png"
-                alt="TSG Logo"
-                className="mx-auto h-24 w-auto rounded-lg object-contain shadow-2xl sm:h-32 md:h-40"
-                loading="lazy"
-              />
-            </a>
+            <img
+              src="/logo.png"
+              alt="TSG Logo"
+              className="mx-auto h-24 w-auto rounded-lg object-contain shadow-2xl sm:h-32 md:h-40"
+              loading="lazy"
+            />
           </motion.div>
           <motion.p
             initial={{ opacity: 0, y: 12 }}
