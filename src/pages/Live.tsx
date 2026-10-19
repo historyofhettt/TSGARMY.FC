@@ -36,26 +36,26 @@ export default function Live() {
 
         <div className="space-y-6">
           {(live ?? []).map((t) => (
-            <div key={t.id} className="glass relative overflow-hidden rounded-2xl border-[hsl(var(--tsg-red)/0.4)] p-6 md:p-8">
+            <div key={t.id} className="glass relative overflow-hidden rounded-2xl border-[hsl(var(--tsg-red)/0.4)] p-4 xs:p-6">
               <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[hsl(var(--tsg-red)/0.14)] blur-3xl" />
-              <div className="relative flex flex-wrap items-center gap-5">
-                <LiveBadge label="LIVE NOW" className="text-sm" />
+              <div className="relative flex flex-col gap-4 xs:flex-row xs:items-center xs:gap-5">
+                <LiveBadge label="LIVE NOW" className="text-xs xs:text-sm" />
                 <div className="min-w-0 flex-1">
                   <h2 className="truncate font-display text-xl font-bold md:text-2xl">{t.name}</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
+                  <p className="mt-1 truncate text-sm text-muted-foreground">
                     {t.team?.name} ·{" "}
                     {t.currentMatch
                       ? `Match ${t.currentMatch.matchNumber} / ${t.numberOfMatches}${t.currentMatch.mapName ? ` · ${t.currentMatch.mapName}` : ""}`
                       : `${t.numberOfMatches} matches`}
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 xs:min-w-fit">
                   {t.youtubeLiveUrl && (
                     <a
                       href={t.youtubeLiveUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex items-center gap-2 rounded-lg bg-[hsl(var(--tsg-red))] px-5 py-2.5 font-display text-sm font-bold tracking-wider text-white transition hover:bg-[hsl(var(--tsg-red)/0.85)]"
+                      className="flex items-center gap-2 rounded-lg bg-[hsl(var(--tsg-red))] px-4 py-2 text-sm font-bold text-white transition hover:bg-[hsl(var(--tsg-red)/0.85)]"
                     >
                       <Youtube className="h-4 w-4" /> WATCH LIVE
                     </a>
@@ -65,14 +65,14 @@ export default function Live() {
                       href={t.instagramLiveUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex items-center gap-2 rounded-lg border border-[hsl(var(--tsg-blue)/0.6)] px-5 py-2.5 font-display text-sm font-bold tracking-wider text-[hsl(var(--tsg-blue))]"
+                      className="flex items-center gap-2 rounded-lg border border-[hsl(var(--tsg-blue)/0.6)] px-4 py-2 text-sm font-bold text-[hsl(var(--tsg-blue))]"
                     >
                       <Instagram className="h-4 w-4" /> INSTAGRAM
                     </a>
                   )}
                   <Link
                     to={`/tournaments/${t.slug}`}
-                    className="flex items-center gap-2 rounded-lg border border-border px-5 py-2.5 font-display text-sm font-bold tracking-wider text-muted-foreground transition hover:text-foreground"
+                    className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-bold text-muted-foreground transition hover:text-foreground"
                   >
                     DETAILS <ArrowRight className="h-4 w-4" />
                   </Link>

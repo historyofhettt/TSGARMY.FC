@@ -41,36 +41,36 @@ export default function Leaderboard() {
                 <div
                   key={u.id}
                   className={cn(
-                    "glass flex items-center gap-4 rounded-xl border border-border p-4 transition-all duration-300 hover:border-[hsl(var(--tsg-blue)/0.5)]",
+                    "glass flex items-center gap-3 rounded-xl border border-border p-3 xs:p-4 transition-all duration-300 hover:border-[hsl(var(--tsg-blue)/0.5)]",
                     isTop && "border-[hsl(var(--tsg-blue)/0.35)] bg-[hsl(var(--tsg-blue)/0.06)]",
                   )}
                 >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center">
                     {isTop ? (
-                      <span className={cn("flex h-8 w-8 items-center justify-center rounded-full border text-sm font-black", RANK_STYLES[rank])}>
+                      <span className={cn("flex h-7 w-7 items-center justify-center rounded-full border text-sm font-black", RANK_STYLES[rank])}>
                         {rank}
                       </span>
                     ) : (
                       <span className="text-sm font-bold text-muted-foreground">#{rank}</span>
                     )}
                   </div>
-                  <div className="flex flex-1 items-center gap-3 min-w-0">
-                   <Link to={`/fans/${u.username}`} className="flex items-center gap-3 min-w-0 -ml-3">
-                      <UserAvatar src={u.avatarUrl} name={u.name} username={u.username ?? undefined} className="h-10 w-10" />
-                     <div className="min-w-0 flex-1">
-                       <span className="font-display font-bold block hover:underline">
-                         {u.name ?? u.username}
-                       </span>
-                       {u.username && u.name && u.name !== u.username && (
-                         <p className="text-xs text-muted-foreground">@{u.username}</p>
-                       )}
-                     </div>
-                     </Link>
-                   </div>
-                  <div className="flex items-center gap-1.5 rounded-lg border border-border bg-background/40 px-3 py-1.5">
-                    <Trophy className="h-4 w-4 text-[hsl(var(--tsg-blue))]" />
-                    <span className="font-display text-lg font-black text-[hsl(var(--tsg-blue))]">{u.xp.toLocaleString()}</span>
-                    <span className="text-xs text-muted-foreground">XP</span>
+                  <div className="min-w-0 flex-1">
+                    <Link to={`/fans/${u.username}`} className="flex items-center gap-2.5 min-w-0">
+                      <UserAvatar src={u.avatarUrl} name={u.name} username={u.username ?? undefined} className="h-8 w-8 shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <span className="block font-display font-bold hover:underline truncate">
+                          {u.name ?? u.username}
+                        </span>
+                        {u.username && u.name && u.name !== u.username && (
+                          <p className="truncate text-xs text-muted-foreground">@{u.username}</p>
+                        )}
+                      </div>
+                    </Link>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1.5 rounded-lg border border-border bg-background/40 px-2 py-1">
+                    <Trophy className="h-3 w-3 text-[hsl(var(--tsg-blue))]" />
+                    <span className="font-display text-sm font-black text-[hsl(var(--tsg-blue))]">{u.xp.toLocaleString()}</span>
+                    <span className="hidden text-[10px] text-muted-foreground xs:inline">XP</span>
                   </div>
                 </div>
               );

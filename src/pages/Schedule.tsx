@@ -31,21 +31,23 @@ export default function Schedule() {
           description="Daily tournament schedule for TSG rosters."
         />
 
-        <div className="mb-10 flex flex-wrap gap-2" aria-label="Filter schedule by team">
-          {[{ id: "all" as const, name: "All" }, ...(teamList ?? []).map((t) => ({ id: t.id as number | "all", name: t.name }))].map((f) => (
-            <button
-              key={String(f.id)}
-              onClick={() => setTeamFilter(f.id)}
-              className={cn(
-                "rounded-md border px-4 py-1.5 text-sm font-semibold transition",
-                teamFilter === f.id
-                  ? "border-[hsl(var(--tsg-blue)/0.6)] bg-[hsl(var(--tsg-blue)/0.12)] text-[hsl(var(--tsg-blue))]"
-                  : "border-border text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {f.name}
-            </button>
-          ))}
+        <div className="mb-10 flex flex-wrap gap-2 overflow-x-auto" aria-label="Filter schedule by team">
+          <div className="flex w-full min-w-max flex-wrap gap-2">
+            {[{ id: "all" as const, name: "All" }, ...(teamList ?? []).map((t) => ({ id: t.id as number | "all", name: t.name }))].map((f) => (
+              <button
+                key={String(f.id)}
+                onClick={() => setTeamFilter(f.id)}
+                className={cn(
+                  "rounded-md border px-4 py-1.5 text-sm font-semibold transition",
+                  teamFilter === f.id
+                    ? "border-[hsl(var(--tsg-blue)/0.6)] bg-[hsl(var(--tsg-blue)/0.12)] text-[hsl(var(--tsg-blue))]"
+                    : "border-border text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {f.name}
+              </button>
+            ))}
+          </div>
         </div>
 
         {isLoading && <p className="py-10 text-center text-muted-foreground">Loading schedule...</p>}
@@ -58,18 +60,20 @@ export default function Schedule() {
             </h2>
             <div className="space-y-3">
               {ongoing.map((t) => (
-                <div key={t.id} className="glass flex flex-wrap items-center gap-4 rounded-xl border-[hsl(var(--tsg-red)/0.4)] p-5">
+                <div key={t.id} className="glass flex flex-col gap-3 rounded-xl border-[hsl(var(--tsg-red)/0.4)] p-5 sm:flex-row sm:items-center">
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-display font-bold">{t.name}</p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="truncate text-sm text-muted-foreground">
                       {t.team?.name} · Match {t.matchesPlayed} / {t.numberOfMatches}
                     </p>
                   </div>
                   <Link
                     to={`/tournaments/${t.slug}`}
-                    className="flex items-center gap-2 rounded-lg bg-[hsl(var(--tsg-red))] px-4 py-2 text-sm font-bold text-white transition hover:bg-[hsl(var(--tsg-red)/0.85)]"
+                    className="shrink-0"
                   >
-                    WATCH LIVE <ArrowRight className="h-4 w-4" />
+                    <span className="inline-flex items-center gap-2 rounded-lg bg-[hsl(var(--tsg-red))] px-4 py-2 text-sm font-bold text-white transition hover:bg-[hsl(var(--tsg-red)/0.85)]">
+                      WATCH LIVE <ArrowRight className="h-4 w-4" />
+                    </span>
                   </Link>
                 </div>
               ))}
@@ -86,7 +90,7 @@ export default function Schedule() {
             <div className="space-y-3">
               {upcoming.map((t) => (
                 <Link key={t.id} to={`/tournaments/${t.slug}`}>
-                  <div className="glass flex flex-wrap items-center gap-4 rounded-xl p-5 transition hover:border-[hsl(var(--tsg-blue)/0.5)]">
+                  <div className="glass flex flex-col gap-3 rounded-xl p-5 transition hover:border-[hsl(var(--tsg-blue)/0.5)] sm:flex-row sm:items-center">
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-display font-bold">{t.name}</p>
                       <p className="text-sm text-muted-foreground">{t.team?.name}</p>
@@ -119,15 +123,17 @@ export default function Schedule() {
             <div className="space-y-3">
               {completed.map((t) => (
                 <Link key={t.id} to={`/tournaments/${t.slug}`}>
-                  <div className="glass flex flex-wrap items-center gap-4 rounded-xl p-5 opacity-80 transition hover:opacity-100">
+                  <div className="glass flex flex-col gap-3 rounded-xl p-5 opacity-80 transition hover:opacity-100 sm:flex-row sm:items-center">
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-display font-bold">{t.name}</p>
                       <p className="text-sm text-muted-foreground">
                         {t.team?.name} · {formatDate(t.startDate)}
                       </p>
                     </div>
-                    <StatusBadge status={t.status} />
-                    <span className="text-sm font-semibold text-[hsl(var(--tsg-blue))]">View Results →</span>
+                    <div className="flex items-center gap-3">
+                      <StatusBadge status={t.status} />
+                      <span className="text-sm font-semibold text-[hsl(var(--tsg-blue))]">View Results →</span>
+                    </div>
                   </div>
                 </Link>
               ))}

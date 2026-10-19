@@ -105,15 +105,17 @@ export default function Home() {
       {/* -------------------------------------------------------- LIVE NOW */}
       <section className="mx-auto max-w-7xl px-4 md:px-8" aria-label="Live tournaments">
         {live && live.length > 0 ? (
-          <motion.div {...fadeUp} className="glass relative -mt-10 overflow-hidden rounded-2xl p-6 md:p-8">
+          <motion.div {...fadeUp} className="glass relative -mt-10 overflow-hidden rounded-2xl p-4 xs:p-6 md:p-8">
             <div className="absolute -left-10 top-0 h-full w-40 bg-[hsl(var(--tsg-red)/0.08)] blur-2xl" />
-            <div className="relative flex flex-wrap items-center gap-4">
-              <LiveBadge label="LIVE NOW" className="text-sm" />
+            <div className="relative flex flex-col gap-4">
+              <div className="flex items-center gap-3">
+                <LiveBadge label="LIVE NOW" className="text-xs xs:text-sm" />
+              </div>
               {live.map((t) => (
-                <div key={t.id} className="flex flex-1 flex-wrap items-center gap-4">
+                <div key={t.id} className="flex flex-col gap-3 xs:flex-row xs:items-center xs:justify-between">
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-display text-lg font-bold">{t.name}</p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="truncate text-sm text-muted-foreground">
                       {t.team?.name} ·{" "}
                       {t.currentMatch
                         ? `Match ${t.currentMatch.matchNumber} / ${t.numberOfMatches}${t.currentMatch.mapName ? ` · ${t.currentMatch.mapName}` : ""}`
@@ -122,9 +124,11 @@ export default function Home() {
                   </div>
                   <Link
                     to={`/tournaments/${t.slug}`}
-                    className="flex items-center gap-2 rounded-lg bg-[hsl(var(--tsg-red))] px-5 py-2.5 font-display text-sm font-bold tracking-wider text-white transition hover:bg-[hsl(var(--tsg-red)/0.85)]"
+                    className="w-full shrink-0 xs:w-auto"
                   >
-                    WATCH LIVE <ArrowRight className="h-4 w-4" />
+                    <span className="inline-flex items-center justify-center gap-2 rounded-lg bg-[hsl(var(--tsg-red))] px-4 py-2 font-display text-sm font-bold tracking-wider text-white transition hover:bg-[hsl(var(--tsg-red)/0.85)]">
+                      WATCH LIVE <ArrowRight className="h-4 w-4" />
+                    </span>
                   </Link>
                 </div>
               ))}

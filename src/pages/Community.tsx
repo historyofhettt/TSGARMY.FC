@@ -47,36 +47,36 @@ export default function Community() {
           </p>
         )}
         <div className="space-y-3">
-          {(latest ?? []).map((c) => (
-            <article
-              key={c.id}
-              className="glass rounded-xl p-4 transition hover:border-[hsl(var(--tsg-blue)/0.5)] cursor-pointer"
-              onClick={() => navigate(`/tournaments/${c.tournamentSlug}`)}
-            >
-              <div className="flex items-center gap-2.5 text-sm">
-                <UserAvatar src={c.userAvatar} name={c.userName} className="h-7 w-7" />
-                <span className="font-semibold">
-                  {c.userUsername ? (
-                    <Link
-                      to={`/fans/${c.userUsername}`}
-                      className="hover:underline"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {c.userName ?? "TSG Fan"}
-                    </Link>
-                  ) : (
-                    c.userName ?? "TSG Fan"
-                  )}
-                </span>
-                <span className="text-xs text-muted-foreground">on {c.tournamentName}</span>
-                <span className="ml-auto text-xs text-muted-foreground">{timeAgo(c.createdAt)}</span>
-              </div>
-              <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{c.content}</p>
-              <p className="mt-2 flex items-center gap-1 text-xs font-semibold text-[hsl(var(--tsg-blue))]">
-                Join the discussion <ArrowRight className="h-3 w-3" />
-              </p>
-            </article>
-          ))}
+            {(latest ?? []).map((c) => (
+              <article
+                key={c.id}
+                className="glass rounded-xl p-3 xs:p-4 cursor-pointer transition hover:border-[hsl(var(--tsg-blue)/0.5)]"
+                onClick={() => navigate(`/tournaments/${c.tournamentSlug}`)}
+              >
+                <div className="flex items-center gap-2 text-sm xs:gap-2.5">
+                  <UserAvatar src={c.userAvatar} name={c.userName} className="h-7 w-7 shrink-0" />
+                  <span className="font-semibold truncate">
+                    {c.userUsername ? (
+                      <Link
+                        to={`/fans/${c.userUsername}`}
+                        className="hover:underline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {c.userName ?? "TSG Fan"}
+                      </Link>
+                    ) : (
+                      c.userName ?? "TSG Fan"
+                    )}
+                  </span>
+                  <span className="hidden truncate text-xs text-muted-foreground xs:inline">on {c.tournamentName}</span>
+                  <span className="ml-auto truncate text-xs text-muted-foreground">{timeAgo(c.createdAt)}</span>
+                </div>
+                <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{c.content}</p>
+                <p className="mt-2 flex items-center gap-1 text-xs font-semibold text-[hsl(var(--tsg-blue))]">
+                  Join the discussion <ArrowRight className="h-3 w-3" />
+                </p>
+              </article>
+            ))}
         </div>
         <div className="mt-8">
           <AdDisplay placement="feed_bottom" page="community" />

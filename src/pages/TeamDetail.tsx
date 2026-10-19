@@ -89,15 +89,15 @@ export default function TeamDetail() {
       </section>
 
       <div className="mx-auto max-w-7xl px-4 py-14 md:px-8">
-        <Tabs defaultValue="roster">
+          <Tabs defaultValue="roster">
           <TabsList className="mb-8 flex flex-wrap">
-            <TabsTrigger value="roster">ROSTER</TabsTrigger>
-            <TabsTrigger value="staff">STAFF</TabsTrigger>
-            <TabsTrigger value="media">MEDIA</TabsTrigger>
-            <TabsTrigger value="tournaments">TOURNAMENTS</TabsTrigger>
-            <TabsTrigger value="leaderboard">LEADERBOARD</TabsTrigger>
-            <TabsTrigger value="achievements">ACHIEVEMENTS</TabsTrigger>
-            <TabsTrigger value="community">COMMUNITY</TabsTrigger>
+            <TabsTrigger value="roster" className="flex-1 min-w-[120px] xs:flex-none">ROSTER</TabsTrigger>
+            <TabsTrigger value="staff" className="flex-1 min-w-[120px] xs:flex-none">STAFF</TabsTrigger>
+            <TabsTrigger value="media" className="flex-1 min-w-[120px] xs:flex-none">MEDIA</TabsTrigger>
+            <TabsTrigger value="tournaments" className="flex-1 min-w-[120px] xs:flex-none">TOURNAMENTS</TabsTrigger>
+            <TabsTrigger value="leaderboard" className="flex-1 min-w-[120px] xs:flex-none">LEADERBOARD</TabsTrigger>
+            <TabsTrigger value="achievements" className="flex-1 min-w-[120px] xs:flex-none">ACHIEVEMENTS</TabsTrigger>
+            <TabsTrigger value="community" className="flex-1 min-w-[120px] xs:flex-none">COMMUNITY</TabsTrigger>
           </TabsList>
 
           <TabsContent value="roster" className="space-y-12">
@@ -164,10 +164,10 @@ export default function TeamDetail() {
                                     href={s.instagram}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="flex h-6 w-6 items-center justify-center rounded-full border border-border/60 bg-background/20 text-muted-foreground transition hover:text-[hsl(var(--tsg-blue))]"
+                                    className="flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-background/20 text-muted-foreground transition hover:text-[hsl(var(--tsg-blue))]"
                                     aria-label="Instagram"
                                   >
-                                    <Instagram className="h-3 w-3" />
+                                    <Instagram className="h-3.5 w-3.5" />
                                   </a>
                                 )}
                                 {s.youtube && (
@@ -175,10 +175,10 @@ export default function TeamDetail() {
                                     href={s.youtube}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="flex h-6 w-6 items-center justify-center rounded-full border border-border/60 bg-background/20 text-muted-foreground transition hover:text-[hsl(var(--tsg-blue))]"
+                                    className="flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-background/20 text-muted-foreground transition hover:text-[hsl(var(--tsg-blue))]"
                                     aria-label="YouTube"
                                   >
-                                    <Youtube className="h-3 w-3" />
+                                    <Youtube className="h-3.5 w-3.5" />
                                   </a>
                                 )}
                               </div>
@@ -199,11 +199,11 @@ export default function TeamDetail() {
                     .map((s) => (
                       <div key={s.id} className="glass group/card relative overflow-hidden rounded-2xl border border-border transition-all duration-300 hover:border-[hsl(var(--tsg-blue)/0.5)]">
                         <div className="relative aspect-[3/4] overflow-hidden">
-                          <PlayerPhoto ign={s.name} photoUrl={s.photoUrl} rounded="rounded-none" className="h-full w-full text-4xl transition-transform duration-500 group-hover/card:scale-105" />
+                          <PlayerPhoto ign={s.name} photoUrl={s.photoUrl} rounded="rounded-none" className="h-full w-full text-3xl xs:text-4xl transition-transform duration-500 group-hover/card:scale-105" />
                           <div className="absolute inset-0 bg-gradient-to-t from-[hsl(224_45%_4%)] via-[hsl(224_45%_4%/0.4)] to-transparent" />
-                          <div className="absolute inset-x-0 bottom-0 p-4">
-                            <p className="font-display text-lg font-bold tracking-wide">{s.name}</p>
-                            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                          <div className="absolute inset-x-0 bottom-0 p-3 xs:p-4">
+                            <p className="font-display text-sm xs:text-base font-bold tracking-wide truncate">{s.name}</p>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
                               {s.role}
                             </p>
                             {(s.instagram || s.youtube) && (
@@ -213,10 +213,10 @@ export default function TeamDetail() {
                                     href={s.instagram}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="flex h-6 w-6 items-center justify-center rounded-full border border-border/60 bg-background/20 text-muted-foreground transition hover:text-[hsl(var(--tsg-blue))]"
+                                    className="flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-background/20 text-muted-foreground transition hover:text-[hsl(var(--tsg-blue))]"
                                     aria-label="Instagram"
                                   >
-                                    <Instagram className="h-3 w-3" />
+                                    <Instagram className="h-3.5 w-3.5" />
                                   </a>
                                 )}
                                 {s.youtube && (
@@ -224,10 +224,10 @@ export default function TeamDetail() {
                                     href={s.youtube}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="flex h-6 w-6 items-center justify-center rounded-full border border-border/60 bg-background/20 text-muted-foreground transition hover:text-[hsl(var(--tsg-blue))]"
+                                    className="flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-background/20 text-muted-foreground transition hover:text-[hsl(var(--tsg-blue))]"
                                     aria-label="YouTube"
                                   >
-                                    <Youtube className="h-3 w-3" />
+                                    <Youtube className="h-3.5 w-3.5" />
                                   </a>
                                 )}
                               </div>
@@ -247,17 +247,17 @@ export default function TeamDetail() {
             ) : (
               (team.media ?? []).map((m) => (
                 <section key={m.id}>
-                  <div className="mb-3 flex items-center justify-between">
-                    <div>
-                      <h3 className="font-display text-lg font-bold tracking-wide">{m.name}</h3>
+                  <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <h3 className="font-display text-lg font-bold tracking-wide truncate">{m.name}</h3>
                       {m.date && (
                         <p className="text-xs text-muted-foreground">{new Date(m.date).toLocaleDateString()}</p>
                       )}
                       {m.description && (
-                        <p className="mt-1 text-xs text-muted-foreground line-clamp-1">{m.description}</p>
+                        <p className="mt-1 text-xs text-muted-foreground line-clamp-1 truncate">{m.description}</p>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex shrink-0 items-center gap-2">
                       {m.link && (
                         <a
                           href={m.link}
@@ -274,7 +274,7 @@ export default function TeamDetail() {
                     <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                       {m.photoUrls.map((url: string, idx: number) => (
                         <div key={idx} className="glass group/card relative overflow-hidden rounded-xl border border-border transition hover:border-[hsl(var(--tsg-blue)/0.5)]">
-                          <img src={url} alt={`${m.name} ${idx + 1}`} className="h-40 w-full object-cover transition-transform duration-500 group-hover/card:scale-105" />
+                          <img src={url} alt={`${m.name} ${idx + 1}`} className="aspect-square w-full object-cover transition-transform duration-500 group-hover/card:scale-105" loading="lazy" />
                         </div>
                       ))}
                     </div>

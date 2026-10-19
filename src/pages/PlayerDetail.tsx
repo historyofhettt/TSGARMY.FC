@@ -143,12 +143,12 @@ export default function PlayerDetail() {
             <p className="text-muted-foreground">No recorded matches yet — statistics appear after the first tournament.</p>
           ) : (
             <>
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
                 {statCards.map((c) => (
-                  <div key={c.label} className="glass rounded-xl p-5 text-center">
-                    <c.icon className="mx-auto mb-2 h-5 w-5 text-[hsl(var(--tsg-blue))]" />
-                    <p className="font-display text-2xl font-black">{c.value}</p>
-                    <p className="mt-1 text-[11px] uppercase tracking-wider text-muted-foreground">{c.label}</p>
+                  <div key={c.label} className="glass rounded-xl p-3 xs:p-5 text-center">
+                    <c.icon className="mx-auto mb-1.5 h-5 w-5 text-[hsl(var(--tsg-blue))] xs:h-6 xs:w-6" />
+                    <p className="font-display text-xl xs:text-2xl font-black">{c.value}</p>
+                    <p className="mt-0.5 text-[10px] xs:text-[11px] uppercase tracking-wider text-muted-foreground">{c.label}</p>
                   </div>
                 ))}
               </div>
@@ -188,30 +188,30 @@ export default function PlayerDetail() {
     {player.recentPerformances.length > 0 && (
           <section>
             <SectionHeading kicker="History" title="RECENT PERFORMANCES" />
-            <div className="overflow-x-auto rounded-xl border border-border">
-              <table className="w-full min-w-[560px] text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
-                    <th className="p-3">Tournament</th>
-                    <th className="p-3">Match</th>
-                    <th className="p-3">Map</th>
-                    <th className="p-3 text-right">Kills</th>
-                    <th className="p-3 text-right">Placement</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {player.recentPerformances.map((r) => (
-                    <tr key={r.matchId} className="border-b border-border/50 last:border-0">
-                      <td className="p-3">{r.tournamentName}</td>
-                      <td className="p-3">Match {r.matchNumber}</td>
-                      <td className="p-3">{r.mapName ?? "—"}</td>
-                      <td className="p-3 text-right font-semibold">{r.kills}</td>
-                      <td className="p-3 text-right">{ordinal(r.placement)}</td>
+              <div className="overflow-x-auto rounded-xl border border-border">
+                <table className="w-full min-w-[480px] text-sm">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
+                      <th className="p-2 xs:p-3">Tournament</th>
+                      <th className="p-2 xs:p-3">Match</th>
+                      <th className="p-2 xs:p-3">Map</th>
+                      <th className="p-2 xs:p-3 text-right">Kills</th>
+                      <th className="p-2 xs:p-3 text-right">Placement</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {player.recentPerformances.map((r) => (
+                      <tr key={r.matchId} className="border-b border-border/50 last:border-0">
+                        <td className="p-2 xs:p-3">{r.tournamentName}</td>
+                        <td className="p-2 xs:p-3">Match {r.matchNumber}</td>
+                        <td className="p-2 xs:p-3">{r.mapName ?? "—"}</td>
+                        <td className="p-2 xs:p-3 text-right font-semibold">{r.kills}</td>
+                        <td className="p-2 xs:p-3 text-right">{ordinal(r.placement)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
           </section>
         )}
       </div>

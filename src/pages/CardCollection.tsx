@@ -111,10 +111,10 @@ export default function CardCollection() {
               className="w-full rounded-lg border border-border bg-background pl-10 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--tsg-blue))]"
             />
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 overflow-x-auto py-1">
             <button
               onClick={() => setSelectedCategory("all")}
-              className={`rounded-lg px-3 py-1 text-xs font-semibold uppercase ${
+              className={`shrink-0 rounded-lg px-3 py-1 text-xs font-semibold uppercase ${
                 selectedCategory === "all"
                   ? "bg-[hsl(var(--tsg-blue))] text-white"
                   : "border border-border bg-background/40 text-muted-foreground hover:bg-accent"
@@ -126,7 +126,7 @@ export default function CardCollection() {
               <button
                 key={key}
                 onClick={() => setSelectedCategory(key as CardCategory)}
-                className={`rounded-lg px-3 py-1 text-xs font-semibold uppercase ${
+                className={`shrink-0 rounded-lg px-3 py-1 text-xs font-semibold uppercase ${
                   selectedCategory === key
                     ? "bg-[hsl(var(--tsg-blue))] text-white"
                     : "border border-border bg-background/40 text-muted-foreground hover:bg-accent"
@@ -151,7 +151,7 @@ export default function CardCollection() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {filtered.map(({ card, quantity, copyNumbers }) => (
               <div key={card.id} className="flex flex-col items-center">
                 <CardDisplay

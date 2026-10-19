@@ -168,61 +168,30 @@ export default function Media() {
           </div>
         </div>
 
-        <div className="mb-8 flex flex-wrap items-center gap-2">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              <Users className="h-3 w-3" /> Team
-            </span>
-            <button
-              onClick={() => setTeamId(null)}
-              className={cn(
-                "rounded-md border px-2.5 py-1 text-xs font-semibold transition",
-                !teamId
-                  ? "border-[hsl(var(--tsg-blue)/0.6)] text-[hsl(var(--tsg-blue))]"
-                  : "border-border text-muted-foreground",
-              )}
-            >
-              All
-            </button>
-            {teams.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setTeamId(teamId === t.id ? null : t.id)}
-                className={cn(
-                  "rounded-md border px-2.5 py-1 text-xs font-semibold transition",
-                  teamId === t.id
-                    ? "border-[hsl(var(--tsg-blue)/0.6)] text-[hsl(var(--tsg-blue))]"
-                    : "border-border text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {t.name}
-              </button>
-            ))}
-          </div>
-
-          {tournaments.length > 0 && (
+        <div className="mb-8 flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                <Trophy className="h-3 w-3" /> Tournament
+                <Users className="h-3 w-3" /> Team
               </span>
               <button
-                onClick={() => setTournamentId(null)}
+                onClick={() => setTeamId(null)}
                 className={cn(
                   "rounded-md border px-2.5 py-1 text-xs font-semibold transition",
-                  !tournamentId
+                  !teamId
                     ? "border-[hsl(var(--tsg-blue)/0.6)] text-[hsl(var(--tsg-blue))]"
                     : "border-border text-muted-foreground",
                 )}
               >
                 All
               </button>
-              {tournaments.map((t) => (
+              {teams.map((t) => (
                 <button
                   key={t.id}
-                  onClick={() => setTournamentId(tournamentId === t.id ? null : t.id)}
+                  onClick={() => setTeamId(teamId === t.id ? null : t.id)}
                   className={cn(
                     "rounded-md border px-2.5 py-1 text-xs font-semibold transition",
-                    tournamentId === t.id
+                    teamId === t.id
                       ? "border-[hsl(var(--tsg-blue)/0.6)] text-[hsl(var(--tsg-blue))]"
                       : "border-border text-muted-foreground hover:text-foreground",
                   )}
@@ -231,80 +200,113 @@ export default function Media() {
                 </button>
               ))}
             </div>
-          )}
 
-          {categories.length > 0 && (
+            {tournaments.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <Trophy className="h-3 w-3" /> Tournament
+                </span>
+                <button
+                  onClick={() => setTournamentId(null)}
+                  className={cn(
+                    "rounded-md border px-2.5 py-1 text-xs font-semibold transition",
+                    !tournamentId
+                      ? "border-[hsl(var(--tsg-blue)/0.6)] text-[hsl(var(--tsg-blue))]"
+                      : "border-border text-muted-foreground",
+                  )}
+                >
+                  All
+                </button>
+                {tournaments.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setTournamentId(tournamentId === t.id ? null : t.id)}
+                    className={cn(
+                      "rounded-md border px-2.5 py-1 text-xs font-semibold transition",
+                      tournamentId === t.id
+                        ? "border-[hsl(var(--tsg-blue)/0.6)] text-[hsl(var(--tsg-blue))]"
+                        : "border-border text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {t.name}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {categories.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Category
+                </span>
+                <button
+                  onClick={() => setCategory(null)}
+                  className={cn(
+                    "rounded-md border px-2.5 py-1 text-xs font-semibold transition",
+                    !category
+                      ? "border-[hsl(var(--tsg-blue)/0.6)] text-[hsl(var(--tsg-blue))]"
+                      : "border-border text-muted-foreground",
+                  )}
+                >
+                  All
+                </button>
+                {categories.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => setCategory(category === c ? null : c)}
+                    className={cn(
+                      "rounded-md border px-2.5 py-1 text-xs font-semibold transition",
+                      category === c
+                        ? "border-[hsl(var(--tsg-blue)/0.6)] text-[hsl(var(--tsg-blue))]"
+                        : "border-border text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+            )}
+
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Category
+              <span className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <Tag className="h-3 w-3" /> Tag
               </span>
               <button
-                onClick={() => setCategory(null)}
+                onClick={() => setTag(null)}
                 className={cn(
                   "rounded-md border px-2.5 py-1 text-xs font-semibold transition",
-                  !category
+                  !tag
                     ? "border-[hsl(var(--tsg-blue)/0.6)] text-[hsl(var(--tsg-blue))]"
                     : "border-border text-muted-foreground",
                 )}
               >
                 All
               </button>
-              {categories.map((c) => (
+              {MEDIA_TAGS.map((t) => (
                 <button
-                  key={c}
-                  onClick={() => setCategory(category === c ? null : c)}
+                  key={t}
+                  onClick={() => setTag(tag === t ? null : t)}
                   className={cn(
                     "rounded-md border px-2.5 py-1 text-xs font-semibold transition",
-                    category === c
+                    tag === t
                       ? "border-[hsl(var(--tsg-blue)/0.6)] text-[hsl(var(--tsg-blue))]"
                       : "border-border text-muted-foreground hover:text-foreground",
                   )}
                 >
-                  {c}
+                  {t}
                 </button>
               ))}
             </div>
-          )}
 
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              <Tag className="h-3 w-3" /> Tag
-            </span>
-            <button
-              onClick={() => setTag(null)}
-              className={cn(
-                "rounded-md border px-2.5 py-1 text-xs font-semibold transition",
-                !tag
-                  ? "border-[hsl(var(--tsg-blue)/0.6)] text-[hsl(var(--tsg-blue))]"
-                  : "border-border text-muted-foreground",
-              )}
-            >
-              All
-            </button>
-            {MEDIA_TAGS.map((t) => (
+            {activeFilters > 0 && (
               <button
-                key={t}
-                onClick={() => setTag(tag === t ? null : t)}
-                className={cn(
-                  "rounded-md border px-2.5 py-1 text-xs font-semibold transition",
-                  tag === t
-                    ? "border-[hsl(var(--tsg-blue)/0.6)] text-[hsl(var(--tsg-blue))]"
-                    : "border-border text-muted-foreground hover:text-foreground",
-                )}
+                onClick={clearFilters}
+                className="flex items-center gap-1 rounded-md border border-[hsl(var(--tsg-red)/0.5)] px-2.5 py-1 text-xs font-semibold text-[hsl(var(--tsg-red))] transition hover:bg-[hsl(var(--tsg-red)/0.1)]"
               >
-                {t}
+                <X className="h-3 w-3" /> Clear ({activeFilters})
               </button>
-            ))}
+            )}
           </div>
-
-          {activeFilters > 0 && (
-            <button
-              onClick={clearFilters}
-              className="ml-auto flex items-center gap-1 rounded-md border border-[hsl(var(--tsg-red)/0.5)] px-2.5 py-1 text-xs font-semibold text-[hsl(var(--tsg-red))] transition hover:bg-[hsl(var(--tsg-red)/0.1)]"
-            >
-              <X className="h-3 w-3" /> Clear ({activeFilters})
-            </button>
-          )}
         </div>
 
         <p className="mb-4 text-xs text-muted-foreground">
@@ -361,12 +363,12 @@ export default function Media() {
                   )}
                 </div>
 
-                <div className="p-4">
+                <div className="p-3 xs:p-4">
                   <div className="mb-2 flex items-center gap-2">
-                    <h3 className="font-display text-lg font-bold">{album.title}</h3>
+                    <h3 className="font-display text-base xs:text-lg font-bold truncate">{album.title}</h3>
                     {album.eventDate && (
-                      <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
-                        <Calendar className="h-3 w-3" /> {formatDate(album.eventDate)}
+                      <span className="ml-auto flex items-center gap-1 truncate text-xs text-muted-foreground">
+                        <Calendar className="h-3 w-3 shrink-0" /> {formatDate(album.eventDate)}
                       </span>
                     )}
                   </div>

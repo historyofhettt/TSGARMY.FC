@@ -82,19 +82,19 @@ export default function TournamentDetail() {
           <Link to="/tournaments" className="mb-4 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-3 w-3" /> All tournaments
           </Link>
-          <div className="flex flex-wrap items-start gap-6">
-            {t.logoUrl ? (
-              <img src={t.logoUrl} alt={`${t.name} logo`} className="h-20 w-20 rounded-xl object-contain md:h-28 md:w-28" />
-            ) : (
-              <span className="flex h-20 w-20 items-center justify-center rounded-xl border border-border bg-background/50 font-display text-2xl font-bold text-muted-foreground md:h-28 md:w-28">
-                {t.name.slice(0, 2).toUpperCase()}
-              </span>
-            )}
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-3">
-                <h1 className="font-display text-2xl font-black tracking-wide md:text-4xl">{t.name}</h1>
-                <StatusBadge status={t.status} />
-              </div>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
+             {t.logoUrl ? (
+               <img src={t.logoUrl} alt={`${t.name} logo`} className="h-16 w-16 rounded-xl object-contain sm:h-20 sm:w-20 md:h-28 md:w-28" />
+             ) : (
+               <span className="flex h-16 w-16 items-center justify-center rounded-xl border border-border bg-background/50 font-display text-xl font-bold text-muted-foreground sm:text-2xl md:text-2xl">
+                 {t.name.slice(0, 2).toUpperCase()}
+               </span>
+             )}
+             <div className="min-w-0 flex-1">
+               <div className="flex flex-wrap items-center gap-3">
+                 <h1 className="min-w-0 truncate font-display text-2xl font-black tracking-wide md:text-4xl">{t.name}</h1>
+                 <StatusBadge status={t.status} />
+               </div>
               {t.team && (
                 <Link to={`/teams/${t.team.slug}`} className="mt-1 inline-block text-sm font-semibold text-[hsl(var(--tsg-blue))] hover:underline">
                   {t.team.name}
@@ -169,14 +169,14 @@ export default function TournamentDetail() {
       )}
 
       <div className="mx-auto max-w-7xl px-4 py-12 md:px-8">
-        <Tabs defaultValue="matches">
-          <TabsList className="mb-8 flex flex-wrap">
-            <TabsTrigger value="matches">MATCH RESULTS</TabsTrigger>
-            <TabsTrigger value="performance">PLAYER PERFORMANCE</TabsTrigger>
-            <TabsTrigger value="pointtable">FINAL POINT TABLE</TabsTrigger>
-            <TabsTrigger value="predictions">PREDICTIONS</TabsTrigger>
-            <TabsTrigger value="community">COMMUNITY</TabsTrigger>
-          </TabsList>
+          <Tabs defaultValue="matches">
+            <TabsList className="mb-8 flex flex-wrap">
+              <TabsTrigger value="matches" className="flex-1 min-w-[140px] xs:flex-none">MATCH RESULTS</TabsTrigger>
+              <TabsTrigger value="performance" className="flex-1 min-w-[140px] xs:flex-none">PLAYER PERFORMANCE</TabsTrigger>
+              <TabsTrigger value="pointtable" className="flex-1 min-w-[140px] xs:flex-none">FINAL POINT TABLE</TabsTrigger>
+              <TabsTrigger value="predictions" className="flex-1 min-w-[140px] xs:flex-none">PREDICTIONS</TabsTrigger>
+              <TabsTrigger value="community" className="flex-1 min-w-[140px] xs:flex-none">COMMUNITY</TabsTrigger>
+            </TabsList>
 
           <TabsContent value="matches" className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {t.matches.length === 0 ? (
@@ -196,13 +196,13 @@ export default function TournamentDetail() {
               <p className="text-muted-foreground">No performance data yet.</p>
             ) : (
               <div className="overflow-x-auto rounded-xl border border-border">
-                <table className="w-full min-w-[640px] text-sm">
+                <table className="w-full min-w-[480px] text-sm">
                   <thead>
                     <tr className="border-b border-border bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
-                      <th className="p-3">#</th>
-                      <th className="p-3">Player</th>
-                      <th className="p-3 text-right">Matches</th>
-                      <th className="p-3 text-right">Kills</th>
+                      <th className="p-2 xs:p-3">#</th>
+                      <th className="p-2 xs:p-3">Player</th>
+                      <th className="p-2 xs:p-3 text-right">Matches</th>
+                      <th className="p-2 xs:p-3 text-right">Kills</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -210,15 +210,15 @@ export default function TournamentDetail() {
                       .sort((a, b) => b.kills - a.kills)
                       .map((row, i) => (
                         <tr key={row.player.id} className="border-b border-border/50 last:border-0">
-                          <td className="p-3 font-display font-bold text-muted-foreground">{i + 1}</td>
-                          <td className="p-3">
+                          <td className="p-2 xs:p-3 font-display font-bold text-muted-foreground">{i + 1}</td>
+                          <td className="p-2 xs:p-3">
                             <Link to={`/players/${row.player.slug}`} className="flex items-center gap-2.5 font-semibold hover:text-[hsl(var(--tsg-blue))]">
-                              <PlayerPhoto ign={row.player.ign} photoUrl={row.player.photoUrl} className="h-8 w-8 text-[10px]" rounded="rounded-md" />
+                              <PlayerPhoto ign={row.player.ign} photoUrl={row.player.photoUrl} className="h-7 w-7 xs:h-8 xs:w-8 text-[10px]" rounded="rounded-md" />
                               {row.player.ign}
                             </Link>
                           </td>
-                          <td className="p-3 text-right">{row.matches}</td>
-                          <td className="p-3 text-right font-bold text-[hsl(var(--tsg-blue))]">{row.kills}</td>
+                          <td className="p-2 xs:p-3 text-right">{row.matches}</td>
+                          <td className="p-2 xs:p-3 text-right font-bold text-[hsl(var(--tsg-blue))]">{row.kills}</td>
                         </tr>
                       ))}
                   </tbody>
@@ -288,13 +288,13 @@ export default function TournamentDetail() {
                         )}
                       </div>
 
-                      <div className="grid gap-3 mb-3 sm:grid-cols-2">
-                        {p.options.map((o: any) => {
-                          const isSelected = myVote?.optionId === o.id;
-                          const showResult = isClosed;
-                          const isCorrect = o.id === p.correctOptionId;
+                   <div className="grid gap-3 mb-3 sm:grid-cols-2">
+                       {p.options.map((o: any) => {
+                         const isSelected = myVote?.optionId === o.id;
+                         const showResult = isClosed;
+                         const isCorrect = o.id === p.correctOptionId;
 
-                          let className = "h-auto p-4 text-left justify-start gap-3 border-2 transition-all ";
+                         let className = "h-auto p-3 xs:p-4 text-left justify-start gap-3 border-2 transition-all text-sm ";
                           if (showResult && isCorrect) {
                             className += "bg-[hsl(var(--tsg-green)/0.15)] border-[hsl(var(--tsg-green)/0.4)] text-[hsl(var(--tsg-green))]";
                           } else if (showResult && isSelected && !isCorrect) {
