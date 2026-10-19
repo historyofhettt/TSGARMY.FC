@@ -143,9 +143,9 @@ async function getOrgWithLogo(options?: BuildMetaOptions): Promise<{
   }
   // For OG metadata, use a static public URL instead of presigned URLs that expire
   // and don't work with HEAD requests (Instagram/Facebook link previews use HEAD).
-  // Fall back to /logo.png served from the app origin.
+  // Use /og-image.png (1200x630) served from the app origin.
   const origin = resolveOrigin(options);
-  const logoUrl = origin ? `${origin}/logo.png` : "/logo.png";
+  const logoUrl = origin ? `${origin}/og-image.png` : "/og-image.png";
   return {
     name: org.orgName,
     tagline: org.tagline,
@@ -177,7 +177,7 @@ export async function getOgMetaForPath(pathname: string, options?: BuildMetaOpti
     "/": {
       title: "TSG — Two Side Gamers | Esports Organization",
       description:
-        "Built for Competition. Driven by Legacy. TSG ARMY. Tournaments, rosters, live matches and player statistics.",
+        "Built for Competition. Driven by Legacy. TSG ARMY & TSG ARTEMIS. Tournaments, rosters, live matches and player statistics.",
       type: "website",
     },
     "/teams": {
